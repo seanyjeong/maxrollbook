@@ -123,24 +123,20 @@
         async function loadStudents() {
             const response = await fetch(API_URL + "/adminstudents");
             const students = await response.json();
-            const gradeFilter = document.getElementById("filter-grade").value;
-            const genderFilter = document.getElementById("filter-gender").value;
 
             const table = document.getElementById("studentList");
-            table.innerHTML = students
-                .filter(s => (!gradeFilter || s.학년 === gradeFilter) && (!genderFilter || s.성별 === genderFilter))
-                .map(s => `
-                    <tr data-id="${s.id}">
-                        <td>${s.이름}</td>
-                        <td>${s.학교}</td>
-                        <td>${s.학년}</td>
-                        <td>${s.성별}</td>
-                        <td>${s.연락처}</td>
-                        <td>${formatAttendanceDays(s)}</td>
-                        <td><button onclick="editStudent(${s.id})">수정</button></td>
-                        <td><button onclick="deleteStudent(${s.id})">삭제</button></td>
-                    </tr>
-                `).join("");
+            table.innerHTML = students.map(s => `
+                <tr data-id="${s.id}">
+                    <td>${s.이름}</td>
+                    <td>${s.학교}</td>
+                    <td>${s.학년}</td>
+                    <td>${s.성별}</td>
+                    <td>${s.연락처}</td>
+                    <td>${formatAttendanceDays(s)}</td>
+                    <td><button onclick="editStudent(${s.id})">수정</button></td>
+                    <td><button onclick="deleteStudent(${s.id})">삭제</button></td>
+                </tr>
+            `).join("");
         }
 
         function formatAttendanceDays(s) {
@@ -158,14 +154,23 @@
         // ✅ 학생 수정 기능 (출석 요일 포함)
         function editStudent(id) {
             const row = document.querySelector(`tr[data-id="${id}"]`);
-            row.innerHTML += `<td><button onclick="saveEdit(${id})">저장</button></td>`;
+            const cells = row.children;
+
+            row.innerHTML = `
+                <td><input type="text" value="${cells[0].innerText}" id="edit-name-${id}"></td>
+                <td><input type="text" value="${cells[1].innerText}" id="edit-school-${id}"></td>
+                <td><input type="text" value="${cells[2].innerText}" id="edit-grade-${id}"></td>
+                <td><input type="text" value="${cells[4].innerText}" id="edit-contact-${id}"></td>
+                <td><button onclick="saveEdit(${id})">저장</button></td>
+            `;
         }
 
         async function saveEdit(id) {
             const updatedData = {
-                이름: document.getElementById("edit-name-" + id).value,
-                학년: document.getElementById("edit-grade-" + id).value,
-                연락처: document.getElementById("edit-contact-" + id).value,
+                이름: document.getElementById(`edit-name-${id}`).value,
+                학교: document.getElementById(`edit-school-${id}`).value,
+                학년: document.getElementById(`edit-grade-${id}`).value,
+                연락처: document.getElementById(`edit-contact-${id}`).value,
             };
 
             await fetch(API_URL + `/adminstudent/${id}`, {
