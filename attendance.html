@@ -8,14 +8,15 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         table { width: 90%; margin: 20px auto; border-collapse: collapse; }
         th, td { padding: 10px; border: 1px solid black; text-align: center; }
-        button { padding: 10px; margin-top: 10px; cursor: pointer; }
-        input[type="text"] { width: 90%; padding: 5px; }
+        input, button, select { padding: 8px; margin: 5px; font-size: 16px; }
+        .date-header { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <h2>출석 체크</h2>
-    
+    <div class="date-header" id="currentDate"></div>
+
     <table id="attendanceTable">
         <thead>
             <tr>
@@ -34,10 +35,18 @@
     <script>
         const API_URL = "https://supermax.kr";
 
-        // ✅ 출석 데이터 불러오기
+        // ✅ 오늘 날짜 및 요일 표시
+        function updateDate() {
+            const today = new Date();
+            const dayNames = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+            document.getElementById("currentDate").innerText = 
+                `${today.toLocaleDateString()} (${dayNames[today.getDay()]})`;
+        }
+        updateDate();
+
         async function fetchAttendanceData() {
             try {
-                const response = await fetch(API_URL + "/attendancetoday");
+                const response = await fetch(API_URL + "/attendance/today");
                 const students = await response.json();
                 renderAttendance(students);
             } catch (error) {
@@ -50,11 +59,11 @@
             let tableContent = "";
             students.forEach((student, index) => {
                 tableContent += `
-                    <tr>
+                    <tr data-id="${student.id}">
                         <td>${student.이름}</td>
-                        <td><input type="radio" name="attendance-${index}" value="출석"></td>
-                        <td><input type="radio" name="attendance-${index}" value="지각"></td>
-                        <td><input type="radio" name="attendance-${index}" value="결석"></td>
+                        <td><input type="radio" name="status-${index}" value="출석"></td>
+                        <td><input type="radio" name="status-${index}" value="지각"></td>
+                        <td><input type="radio" name="status-${index}" value="결석"></td>
                         <td><input type="text" id="reason-${index}" value="${student.사유 || ""}"></td>
                     </tr>
                 `;
@@ -69,17 +78,14 @@
             let data = [];
 
             rows.forEach((row, index) => {
-                const name = row.children[0].innerText;
-                const attendanceStatus = document.querySelector(`input[name="attendance-${index}"]:checked`);
+                const studentId = row.getAttribute("data-id");
+                const selectedStatus = document.querySelector(`input[name="status-${index}"]:checked`);
+
+                if (!selectedStatus) return alert("출석 상태를 선택해주세요!");
+
                 const reason = document.getElementById(`reason-${index}`).value;
 
-                if (attendanceStatus) {
-                    data.push({
-                        이름: name,
-                        출석상태: attendanceStatus.value,
-                        사유: reason
-                    });
-                }
+                data.push({ 학생_id: studentId, 출석상태: selectedStatus.value, 사유: reason });
             });
 
             try {
@@ -95,7 +101,7 @@
             }
         }
 
-        // 페이지 로드 시 출석 데이터 가져오기
+        // ✅ 페이지 로드 시 출석 데이터 가져오기
         fetchAttendanceData();
     </script>
 
