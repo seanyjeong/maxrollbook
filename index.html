@@ -1,118 +1,96 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>출석 체크</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; }
-    table { width: 90%; margin: 20px auto; border-collapse: collapse; }
-    th, td { padding: 10px; border: 1px solid black; text-align: center; }
-    button { padding: 10px; margin-top: 20px; cursor: pointer; }
-    input[type="text"] { width: 90%; padding: 5px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출석 관리</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <script>
+        const API_URL = "https://supermax.kr:3000";
+
+        async function fetchStudents() {
+            try {
+                const response = await fetch(`${API_URL}/admin/students`);
+                const students = await response.json();
+                renderStudentList(students);
+            } catch (error) {
+                console.error("학생 목록 조회 오류:", error);
+            }
+        }
+
+        function renderStudentList(students) {
+            const tableBody = document.getElementById("student-list");
+            tableBody.innerHTML = "";
+            students.forEach(student => {
+                const row = `<tr>
+                    <td>${student.이름}</td>
+                    <td>${student.학교}</td>
+                    <td>${student.학년}</td>
+                    <td>${student.성별}</td>
+                    <td><button onclick="deleteStudent(${student.id})">삭제</button></td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        async function deleteStudent(studentId) {
+            try {
+                await fetch(`${API_URL}/admin/student/${studentId}`, { method: "DELETE" });
+                fetchStudents();
+            } catch (error) {
+                console.error("학생 삭제 오류:", error);
+            }
+        }
+
+        async function addStudent(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const studentData = Object.fromEntries(formData);
+
+            try {
+                await fetch(`${API_URL}/admin/student`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(studentData)
+                });
+                form.reset();
+                fetchStudents();
+            } catch (error) {
+                console.error("학생 추가 오류:", error);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", fetchStudents);
+    </script>
 </head>
 <body>
+    <h1>출석 관리</h1>
 
-<h2>출석 체크</h2>
+    <h2>학생 추가</h2>
+    <form onsubmit="addStudent(event)">
+        <input type="text" name="이름" placeholder="이름" required>
+        <input type="text" name="학교" placeholder="학교">
+        <input type="text" name="학년" placeholder="학년">
+        <select name="성별">
+            <option value="남">남</option>
+            <option value="여">여</option>
+        </select>
+        <button type="submit">추가</button>
+    </form>
 
-<table id="attendanceTable">
-  <thead>
-    <tr>
-      <th>이름</th>
-      <th>출석</th>
-      <th>지각</th>
-      <th>결석</th>
-      <th>사유</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-
-<button onclick="saveAttendance()">출석 저장</button>
-
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzSCiCwCWdgQ9yFS4R7oeyFYzFDO91nJb-w8hiZlPyPT3NYtlT8FPbL5ZVQxbl5XxlyxA/exec";
-const PROXY_URL = "https://cors-anywhere.herokuapp.com/";
-
-async function fetchAttendanceData() {
-  try {
-    const response = await fetch(PROXY_URL + API_URL, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
-    const data = await response.json();
-    console.log(data);
-  } catch (error) {
-    console.error("출석 데이터를 불러오는 중 오류 발생:", error);
-  }
-}
-
-fetchAttendanceData();
-
-
-// 출석 데이터 불러오기
-async function fetchAttendanceData() {
-  try {
-    const response = await fetch(API_URL);
-    const students = await response.json();
-    renderAttendance(students);
-  } catch (error) {
-    console.error("출석 데이터를 불러오는 중 오류 발생:", error);
-  }
-}
-
-// 출석 데이터 테이블 렌더링
-function renderAttendance(students) {
-  let tableContent = "";
-  students.forEach((student, index) => {
-    tableContent += `
-      <tr>
-        <td>${student.name}</td>
-        <td><input type="checkbox" id="attend-${index}" ${student.attendance ? "checked" : ""}></td>
-        <td><input type="checkbox" id="late-${index}" ${student.late ? "checked" : ""}></td>
-        <td><input type="checkbox" id="absent-${index}" ${student.absent ? "checked" : ""}></td>
-        <td><input type="text" id="reason-${index}" value="${student.reason || ""}"></td>
-      </tr>
-    `;
-  });
-
-  document.querySelector("#attendanceTable tbody").innerHTML = tableContent;
-}
-
-// 출석 데이터 저장
-async function saveAttendance() {
-  const rows = document.querySelectorAll("#attendanceTable tbody tr");
-  let data = [];
-
-  rows.forEach((row, index) => {
-    const name = row.children[0].innerText;
-    const attend = document.getElementById(`attend-${index}`).checked;
-    const late = document.getElementById(`late-${index}`).checked;
-    const absent = document.getElementById(`absent-${index}`).checked;
-    const reason = document.getElementById(`reason-${index}`).value;
-
-    data.push({ name, attendance: attend, late, absent, reason });
-  });
-
-  try {
-    await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    alert("출석 데이터가 저장되었습니다!");
-  } catch (error) {
-    console.error("출석 데이터를 저장하는 중 오류 발생:", error);
-    alert("저장 실패! 다시 시도해주세요.");
-  }
-}
-
-// 페이지 로드 시 출석 데이터 가져오기
-fetchAttendanceData();
-</script>
-
+    <h2>학생 목록</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>이름</th>
+                <th>학교</th>
+                <th>학년</th>
+                <th>성별</th>
+                <th>삭제</th>
+            </tr>
+        </thead>
+        <tbody id="student-list"></tbody>
+    </table>
 </body>
 </html>
