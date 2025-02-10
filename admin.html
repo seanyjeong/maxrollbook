@@ -9,7 +9,6 @@
         table { width: 90%; margin: 20px auto; border-collapse: collapse; }
         th, td { padding: 10px; border: 1px solid black; text-align: center; }
         input, button, select { padding: 8px; margin: 5px; font-size: 16px; }
-        .edit-mode input, .edit-mode select { width: 80px; }
         .filter-container { margin-top: 20px; }
     </style>
 </head>
@@ -156,7 +155,7 @@
             loadStudents();
         }
 
-        // ✅ 학생 수정 기능
+        // ✅ 학생 수정 기능 (출석 요일 포함)
         function editStudent(id) {
             const row = document.querySelector(`tr[data-id="${id}"]`);
             row.innerHTML += `<td><button onclick="saveEdit(${id})">저장</button></td>`;
