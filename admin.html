@@ -58,7 +58,7 @@
         <tbody id="studentList"></tbody>
     </table>
 
-    <!-- ✅ 필터링 기능을 학생 목록 아래로 이동 -->
+    <!-- ✅ 필터링 기능 -->
     <div class="filter-container">
         <label>학년: 
             <select id="filter-grade">
@@ -112,7 +112,7 @@
                 }
 
                 alert("학생 추가 완료!");
-                document.getElementById("studentForm").reset(); // 📌 입력칸 초기화
+                document.getElementById("studentForm").reset();
                 loadStudents();
             } catch (error) {
                 console.error("학생 추가 오류:", error);
@@ -156,8 +156,26 @@
             loadStudents();
         }
 
+        // ✅ 학생 수정 기능
         function editStudent(id) {
-            // 수정 기능은 이전 코드와 동일하므로 그대로 유지
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            row.innerHTML += `<td><button onclick="saveEdit(${id})">저장</button></td>`;
+        }
+
+        async function saveEdit(id) {
+            const updatedData = {
+                이름: document.getElementById("edit-name-" + id).value,
+                학년: document.getElementById("edit-grade-" + id).value,
+                연락처: document.getElementById("edit-contact-" + id).value,
+            };
+
+            await fetch(API_URL + `/adminstudent/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updatedData),
+            });
+
+            loadStudents();
         }
 
         loadStudents();
