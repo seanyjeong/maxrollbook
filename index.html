@@ -1,126 +1,99 @@
-import { useEffect, useState } from "react";
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>출석 체크</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; }
+    table { width: 90%; margin: 20px auto; border-collapse: collapse; }
+    th, td { padding: 10px; border: 1px solid black; text-align: center; }
+    button { padding: 10px; margin-top: 20px; cursor: pointer; }
+    input[type="text"] { width: 90%; padding: 5px; }
+  </style>
+</head>
+<body>
 
+<h2>출석 체크</h2>
+
+<table id="attendanceTable">
+  <thead>
+    <tr>
+      <th>이름</th>
+      <th>출석</th>
+      <th>지각</th>
+      <th>결석</th>
+      <th>사유</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<button onclick="saveAttendance()">출석 저장</button>
+
+<script>
 const API_URL = "https://script.google.com/macros/s/AKfycbzSCiCwCWdgQ9yFS4R7oeyFYzFDO91nJb-w8hiZlPyPT3NYtlT8FPbL5ZVQxbl5XxlyxA/exec";
 
-function App() {
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchAttendanceData();
-  }, []);
-
-  const fetchAttendanceData = async () => {
-    try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-      setStudents(data);
-      setLoading(false);
-    } catch (error) {
-      console.error("출석 데이터를 불러오는 중 오류 발생:", error);
-      setLoading(false);
-    }
-  };
-
-  const handleCheck = (index, type) => {
-    const updatedStudents = [...students];
-    updatedStudents[index][type] = !updatedStudents[index][type];
-
-    // 출석 선택 시 지각/결석 해제
-    if (type === "attendance") {
-      updatedStudents[index].late = false;
-      updatedStudents[index].absent = false;
-    } else if (type === "late") {
-      updatedStudents[index].attendance = false;
-      updatedStudents[index].absent = false;
-    } else if (type === "absent") {
-      updatedStudents[index].attendance = false;
-      updatedStudents[index].late = false;
-    }
-
-    setStudents(updatedStudents);
-  };
-
-  const handleSave = async () => {
-    try {
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(students),
-      });
-      alert("출석 데이터가 저장되었습니다!");
-    } catch (error) {
-      console.error("출석 데이터를 저장하는 중 오류 발생:", error);
-      alert("저장 실패! 다시 시도해주세요.");
-    }
-  };
-
-  if (loading) return <div className="text-center mt-10">출석 데이터를 불러오는 중...</div>;
-
-  return (
-    <div className="min-h-screen bg-gray-100 p-4 text-center">
-      <h1 className="text-xl font-bold mb-4">📌 출석 체크</h1>
-      <div className="bg-white shadow-md rounded-lg p-4">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="p-2">이름</th>
-              <th className="p-2">출석</th>
-              <th className="p-2">지각</th>
-              <th className="p-2">결석</th>
-              <th className="p-2">사유</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student, index) => (
-              <tr key={index} className="border-t">
-                <td className="p-2">{student.name}</td>
-                <td className="p-2">
-                  <input
-                    type="checkbox"
-                    checked={student.attendance}
-                    onChange={() => handleCheck(index, "attendance")}
-                  />
-                </td>
-                <td className="p-2">
-                  <input
-                    type="checkbox"
-                    checked={student.late}
-                    onChange={() => handleCheck(index, "late")}
-                  />
-                </td>
-                <td className="p-2">
-                  <input
-                    type="checkbox"
-                    checked={student.absent}
-                    onChange={() => handleCheck(index, "absent")}
-                  />
-                </td>
-                <td className="p-2">
-                  <input
-                    type="text"
-                    className="border rounded px-2 py-1 w-full"
-                    value={student.reason || ""}
-                    onChange={(e) => {
-                      const updatedStudents = [...students];
-                      updatedStudents[index].reason = e.target.value;
-                      setStudents(updatedStudents);
-                    }}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <button
-          onClick={handleSave}
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          저장하기
-        </button>
-      </div>
-    </div>
-  );
+// 출석 데이터 불러오기
+async function fetchAttendanceData() {
+  try {
+    const response = await fetch(API_URL);
+    const students = await response.json();
+    renderAttendance(students);
+  } catch (error) {
+    console.error("출석 데이터를 불러오는 중 오류 발생:", error);
+  }
 }
 
-export default App;
+// 출석 데이터 테이블 렌더링
+function renderAttendance(students) {
+  let tableContent = "";
+  students.forEach((student, index) => {
+    tableContent += `
+      <tr>
+        <td>${student.name}</td>
+        <td><input type="checkbox" id="attend-${index}" ${student.attendance ? "checked" : ""}></td>
+        <td><input type="checkbox" id="late-${index}" ${student.late ? "checked" : ""}></td>
+        <td><input type="checkbox" id="absent-${index}" ${student.absent ? "checked" : ""}></td>
+        <td><input type="text" id="reason-${index}" value="${student.reason || ""}"></td>
+      </tr>
+    `;
+  });
+
+  document.querySelector("#attendanceTable tbody").innerHTML = tableContent;
+}
+
+// 출석 데이터 저장
+async function saveAttendance() {
+  const rows = document.querySelectorAll("#attendanceTable tbody tr");
+  let data = [];
+
+  rows.forEach((row, index) => {
+    const name = row.children[0].innerText;
+    const attend = document.getElementById(`attend-${index}`).checked;
+    const late = document.getElementById(`late-${index}`).checked;
+    const absent = document.getElementById(`absent-${index}`).checked;
+    const reason = document.getElementById(`reason-${index}`).value;
+
+    data.push({ name, attendance: attend, late, absent, reason });
+  });
+
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    alert("출석 데이터가 저장되었습니다!");
+  } catch (error) {
+    console.error("출석 데이터를 저장하는 중 오류 발생:", error);
+    alert("저장 실패! 다시 시도해주세요.");
+  }
+}
+
+// 페이지 로드 시 출석 데이터 가져오기
+fetchAttendanceData();
+</script>
+
+</body>
+</html>
