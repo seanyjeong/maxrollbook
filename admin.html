@@ -145,6 +145,42 @@
                 `).join("");
         }
 
+        async function saveEdit(id) {
+    const updatedData = {
+        이름: document.getElementById(`edit-name-${id}`).value,
+        학교: document.getElementById(`edit-school-${id}`).value,
+        학년: document.getElementById(`edit-grade-${id}`).value,
+        성별: document.getElementById(`edit-gender-${id}`).value,
+        연락처: document.getElementById(`edit-contact-${id}`).value,
+        출석_월: document.getElementById(`edit-attend-mon-${id}`).checked ? 1 : 0,
+        출석_화: document.getElementById(`edit-attend-tue-${id}`).checked ? 1 : 0,
+        출석_수: document.getElementById(`edit-attend-wed-${id}`).checked ? 1 : 0,
+        출석_목: document.getElementById(`edit-attend-thu-${id}`).checked ? 1 : 0,
+        출석_금: document.getElementById(`edit-attend-fri-${id}`).checked ? 1 : 0,
+        출석_토: document.getElementById(`edit-attend-sat-${id}`).checked ? 1 : 0,
+        출석_일: document.getElementById(`edit-attend-sun-${id}`).checked ? 1 : 0
+    };
+
+    try {
+        const response = await fetch(API_URL + `/adminstudent/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedData),
+        });
+
+        if (!response.ok) {
+            throw new Error("학생 수정 실패");
+        }
+
+        alert("학생 정보 수정 완료!");
+        loadStudents();  // 수정 후 학생 목록 새로고침
+    } catch (error) {
+        console.error("학생 수정 오류:", error);
+        alert("학생 수정에 실패했습니다.");
+    }
+}
+
+
         function formatAttendanceDays(s) {
             return [
                 s.출석_월 ? "월" : "", s.출석_화 ? "화" : "", s.출석_수 ? "수" : "",
