@@ -127,6 +127,15 @@
                     <option value="여" ${cells[3].innerText === "여" ? "selected" : ""}>여</option>
                 </select></td>
                 <td><input type="text" value="${cells[4].innerText}" id="edit-contact-${id}"></td>
+                <td>
+                    <label><input type="checkbox" id="edit-attend-mon-${id}"> 월</label>
+                    <label><input type="checkbox" id="edit-attend-tue-${id}"> 화</label>
+                    <label><input type="checkbox" id="edit-attend-wed-${id}"> 수</label>
+                    <label><input type="checkbox" id="edit-attend-thu-${id}"> 목</label>
+                    <label><input type="checkbox" id="edit-attend-fri-${id}"> 금</label>
+                    <label><input type="checkbox" id="edit-attend-sat-${id}"> 토</label>
+                    <label><input type="checkbox" id="edit-attend-sun-${id}"> 일</label>
+                </td>
                 <td><button onclick="saveEdit(${id})">저장</button></td>
             `;
         }
@@ -137,7 +146,14 @@
                 학교: document.getElementById(`edit-school-${id}`).value,
                 학년: document.getElementById(`edit-grade-${id}`).value,
                 성별: document.getElementById(`edit-gender-${id}`).value,
-                연락처: document.getElementById(`edit-contact-${id}`).value
+                연락처: document.getElementById(`edit-contact-${id}`).value,
+                출석_월: document.getElementById(`edit-attend-mon-${id}`).checked ? 1 : 0,
+                출석_화: document.getElementById(`edit-attend-tue-${id}`).checked ? 1 : 0,
+                출석_수: document.getElementById(`edit-attend-wed-${id}`).checked ? 1 : 0,
+                출석_목: document.getElementById(`edit-attend-thu-${id}`).checked ? 1 : 0,
+                출석_금: document.getElementById(`edit-attend-fri-${id}`).checked ? 1 : 0,
+                출석_토: document.getElementById(`edit-attend-sat-${id}`).checked ? 1 : 0,
+                출석_일: document.getElementById(`edit-attend-sun-${id}`).checked ? 1 : 0
             };
 
             await fetch(API_URL + `/adminstudent/${id}`, {
