@@ -33,6 +33,25 @@
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbzSCiCwCWdgQ9yFS4R7oeyFYzFDO91nJb-w8hiZlPyPT3NYtlT8FPbL5ZVQxbl5XxlyxA/exec";
+const PROXY_URL = "https://cors-anywhere.herokuapp.com/";
+
+async function fetchAttendanceData() {
+  try {
+    const response = await fetch(PROXY_URL + API_URL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+    const data = await response.json();
+    console.log(data);
+  } catch (error) {
+    console.error("출석 데이터를 불러오는 중 오류 발생:", error);
+  }
+}
+
+fetchAttendanceData();
+
 
 // 출석 데이터 불러오기
 async function fetchAttendanceData() {
