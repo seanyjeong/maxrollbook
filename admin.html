@@ -8,12 +8,35 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         table { width: 90%; margin: 20px auto; border-collapse: collapse; }
         th, td { padding: 10px; border: 1px solid black; text-align: center; }
-        input, button { padding: 5px; margin: 5px; }
+        input, button, select { padding: 8px; margin: 5px; font-size: 16px; }
+        .filter-container { margin-bottom: 15px; }
+        .edit-mode input { width: 80px; }
     </style>
 </head>
 <body>
 
     <h2>학생 관리</h2>
+
+    <!-- 필터 -->
+    <div class="filter-container">
+        <label>학년: 
+            <select id="filter-grade">
+                <option value="">전체</option>
+                <option value="1">1학년</option>
+                <option value="2">2학년</option>
+                <option value="3">3학년</option>
+            </select>
+        </label>
+        <label>성별: 
+            <select id="filter-gender">
+                <option value="">전체</option>
+                <option value="남">남</option>
+                <option value="여">여</option>
+            </select>
+        </label>
+        <button onclick="loadStudents()">필터 적용</button>
+    </div>
+
     <form id="studentForm">
         <input type="text" id="name" placeholder="이름" required>
         <input type="text" id="school" placeholder="학교">
@@ -47,6 +70,7 @@
                 <th>성별</th>
                 <th>연락처</th>
                 <th>출석 요일</th>
+                <th>수정</th>
                 <th>삭제</th>
             </tr>
         </thead>
@@ -81,6 +105,7 @@
                 body: JSON.stringify(studentData),
             });
 
+            document.getElementById("studentForm").reset();  // ✅ 입력칸 초기화
             loadStudents();
         });
 
@@ -88,26 +113,74 @@
         async function loadStudents() {
             const response = await fetch(API_URL + "/adminstudents");
             const students = await response.json();
+            const gradeFilter = document.getElementById("filter-grade").value;
+            const genderFilter = document.getElementById("filter-gender").value;
+
             const table = document.getElementById("studentList");
-            table.innerHTML = students.map(s => `
-                <tr>
-                    <td>${s.이름}</td>
-                    <td>${s.학교}</td>
-                    <td>${s.학년}</td>
-                    <td>${s.성별}</td>
-                    <td>${s.연락처}</td>
-                    <td>
-                        ${s.출석_월 ? "월 " : ""}${s.출석_화 ? "화 " : ""}${s.출석_수 ? "수 " : ""}
-                        ${s.출석_목 ? "목 " : ""}${s.출석_금 ? "금 " : ""}${s.출석_토 ? "토 " : ""}${s.출석_일 ? "일 " : ""}
-                    </td>
-                    <td><button onclick="deleteStudent(${s.id})">삭제</button></td>
-                </tr>
-            `).join("");
+            table.innerHTML = students
+                .filter(s => (!gradeFilter || s.학년 === gradeFilter) && (!genderFilter || s.성별 === genderFilter))
+                .map(s => `
+                    <tr data-id="${s.id}">
+                        <td>${s.이름}</td>
+                        <td>${s.학교}</td>
+                        <td>${s.학년}</td>
+                        <td>${s.성별}</td>
+                        <td>${s.연락처}</td>
+                        <td>${formatAttendanceDays(s)}</td>
+                        <td><button onclick="editStudent(${s.id})">수정</button></td>
+                        <td><button onclick="deleteStudent(${s.id})">삭제</button></td>
+                    </tr>
+                `).join("");
+        }
+
+        // ✅ 출석 요일 포맷 함수
+        function formatAttendanceDays(s) {
+            return [
+                s.출석_월 ? "월" : "", s.출석_화 ? "화" : "", s.출석_수 ? "수" : "",
+                s.출석_목 ? "목" : "", s.출석_금 ? "금" : "", s.출석_토 ? "토" : "", s.출석_일 ? "일" : ""
+            ].filter(Boolean).join(" ");
         }
 
         // ✅ 학생 삭제
         async function deleteStudent(id) {
             await fetch(API_URL + `/adminstudent/${id}`, { method: "DELETE" });
+            loadStudents();
+        }
+
+        // ✅ 학생 수정 (해당 행을 입력 폼으로 변경)
+        function editStudent(id) {
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const cells = row.children;
+
+            row.innerHTML = `
+                <td><input type="text" value="${cells[0].innerText}" id="edit-name-${id}"></td>
+                <td><input type="text" value="${cells[1].innerText}" id="edit-school-${id}"></td>
+                <td><input type="text" value="${cells[2].innerText}" id="edit-grade-${id}"></td>
+                <td><select id="edit-gender-${id}">
+                    <option value="남" ${cells[3].innerText === "남" ? "selected" : ""}>남</option>
+                    <option value="여" ${cells[3].innerText === "여" ? "selected" : ""}>여</option>
+                </select></td>
+                <td><input type="text" value="${cells[4].innerText}" id="edit-contact-${id}"></td>
+                <td><button onclick="saveEdit(${id})">저장</button></td>
+            `;
+        }
+
+        // ✅ 수정 내용 저장
+        async function saveEdit(id) {
+            const updatedData = {
+                이름: document.getElementById(`edit-name-${id}`).value,
+                학교: document.getElementById(`edit-school-${id}`).value,
+                학년: document.getElementById(`edit-grade-${id}`).value,
+                성별: document.getElementById(`edit-gender-${id}`).value,
+                연락처: document.getElementById(`edit-contact-${id}`).value
+            };
+
+            await fetch(API_URL + `/adminstudent/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updatedData),
+            });
+
             loadStudents();
         }
 
