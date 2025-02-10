@@ -3,94 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출석 관리</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
-    <script>
-        const API_URL = "https://supermax.kr";
-
-        async function fetchStudents() {
-            try {
-                const response = await fetch(`${API_URL}/adminstudents`);
-                const students = await response.json();
-                renderStudentList(students);
-            } catch (error) {
-                console.error("학생 목록 조회 오류:", error);
-            }
-        }
-
-        function renderStudentList(students) {
-            const tableBody = document.getElementById("student-list");
-            tableBody.innerHTML = "";
-            students.forEach(student => {
-                const row = `<tr>
-                    <td>${student.이름}</td>
-                    <td>${student.학교}</td>
-                    <td>${student.학년}</td>
-                    <td>${student.성별}</td>
-                    <td><button onclick="deleteStudent(${student.id})">삭제</button></td>
-                </tr>`;
-                tableBody.innerHTML += row;
-            });
-        }
-
-        async function deleteStudent(studentId) {
-            try {
-                await fetch(`${API_URL}/adminstudent/${studentId}`, { method: "DELETE" });
-                fetchStudents();
-            } catch (error) {
-                console.error("학생 삭제 오류:", error);
-            }
-        }
-
-        async function addStudent(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            const studentData = Object.fromEntries(formData);
-
-            try {
-                await fetch(`${API_URL}/adminstudent`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(studentData)
-                });
-                form.reset();
-                fetchStudents();
-            } catch (error) {
-                console.error("학생 추가 오류:", error);
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", fetchStudents);
-    </script>
+    <title>출석 관리 시스템</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <h1>출석 관리</h1>
 
-    <h2>학생 추가</h2>
-    <form onsubmit="addStudent(event)">
-        <input type="text" name="이름" placeholder="이름" required>
-        <input type="text" name="학교" placeholder="학교">
-        <input type="text" name="학년" placeholder="학년">
-        <select name="성별">
-            <option value="남">남</option>
-            <option value="여">여</option>
-        </select>
-        <button type="submit">추가</button>
-    </form>
+    <h2>출석 관리 시스템</h2>
+    <button onclick="location.href='admin.html'">관리자 페이지</button>
+    <button onclick="location.href='attendance.html'">출석 체크</button>
 
-    <h2>학생 목록</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>이름</th>
-                <th>학교</th>
-                <th>학년</th>
-                <th>성별</th>
-                <th>삭제</th>
-            </tr>
-        </thead>
-        <tbody id="student-list"></tbody>
-    </table>
 </body>
 </html>
