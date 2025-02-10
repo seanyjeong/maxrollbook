@@ -10,14 +10,13 @@
         th, td { padding: 10px; border: 1px solid black; text-align: center; }
         input, button, select { padding: 8px; margin: 5px; font-size: 16px; }
         .filter-container { margin-bottom: 15px; }
-        .edit-mode input { width: 80px; }
+        .edit-mode input, .edit-mode select { width: 80px; }
     </style>
 </head>
 <body>
 
     <h2>학생 관리</h2>
 
-    <!-- 필터 -->
     <div class="filter-container">
         <label>학년: 
             <select id="filter-grade">
@@ -80,36 +79,6 @@
     <script>
         const API_URL = "https://supermax.kr";
 
-        // ✅ 학생 추가
-        document.getElementById("studentForm").addEventListener("submit", async function(event) {
-            event.preventDefault();
-
-            const studentData = {
-                이름: document.getElementById("name").value,
-                학교: document.getElementById("school").value,
-                학년: document.getElementById("grade").value,
-                성별: document.getElementById("gender").value,
-                연락처: document.getElementById("contact").value,
-                출석_월: document.getElementById("attend-mon").checked ? 1 : 0,
-                출석_화: document.getElementById("attend-tue").checked ? 1 : 0,
-                출석_수: document.getElementById("attend-wed").checked ? 1 : 0,
-                출석_목: document.getElementById("attend-thu").checked ? 1 : 0,
-                출석_금: document.getElementById("attend-fri").checked ? 1 : 0,
-                출석_토: document.getElementById("attend-sat").checked ? 1 : 0,
-                출석_일: document.getElementById("attend-sun").checked ? 1 : 0
-            };
-
-            await fetch(API_URL + "/adminstudent", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(studentData),
-            });
-
-            document.getElementById("studentForm").reset();  // ✅ 입력칸 초기화
-            loadStudents();
-        });
-
-        // ✅ 학생 목록 불러오기
         async function loadStudents() {
             const response = await fetch(API_URL + "/adminstudents");
             const students = await response.json();
@@ -133,7 +102,6 @@
                 `).join("");
         }
 
-        // ✅ 출석 요일 포맷 함수
         function formatAttendanceDays(s) {
             return [
                 s.출석_월 ? "월" : "", s.출석_화 ? "화" : "", s.출석_수 ? "수" : "",
@@ -141,13 +109,11 @@
             ].filter(Boolean).join(" ");
         }
 
-        // ✅ 학생 삭제
         async function deleteStudent(id) {
             await fetch(API_URL + `/adminstudent/${id}`, { method: "DELETE" });
             loadStudents();
         }
 
-        // ✅ 학생 수정 (해당 행을 입력 폼으로 변경)
         function editStudent(id) {
             const row = document.querySelector(`tr[data-id="${id}"]`);
             const cells = row.children;
@@ -165,7 +131,6 @@
             `;
         }
 
-        // ✅ 수정 내용 저장
         async function saveEdit(id) {
             const updatedData = {
                 이름: document.getElementById(`edit-name-${id}`).value,
