@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출석 체크</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        table { width: 90%; margin: 20px auto; border-collapse: collapse; }
+        th, td { padding: 10px; border: 1px solid black; text-align: center; }
+        button { padding: 10px; margin-top: 10px; cursor: pointer; }
+        input[type="text"] { width: 90%; padding: 5px; }
+    </style>
+</head>
+<body>
+
+    <h2>출석 체크</h2>
+    
+    <table id="attendanceTable">
+        <thead>
+            <tr>
+                <th>이름</th>
+                <th>출석</th>
+                <th>지각</th>
+                <th>결석</th>
+                <th>사유</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <button onclick="saveAttendance()">출석 저장</button>
+
+    <script>
+        const API_URL = "https://supermax.kr";
+
+        // ✅ 출석 데이터 불러오기
+        async function fetchAttendanceData() {
+            try {
+                const response = await fetch(API_URL + "/attendancetoday");
+                const students = await response.json();
+                renderAttendance(students);
+            } catch (error) {
+                console.error("출석 데이터를 불러오는 중 오류 발생:", error);
+            }
+        }
+
+        // ✅ 출석 데이터 테이블 렌더링
+        function renderAttendance(students) {
+            let tableContent = "";
+            students.forEach((student, index) => {
+                tableContent += `
+                    <tr>
+                        <td>${student.이름}</td>
+                        <td><input type="radio" name="attendance-${index}" value="출석"></td>
+                        <td><input type="radio" name="attendance-${index}" value="지각"></td>
+                        <td><input type="radio" name="attendance-${index}" value="결석"></td>
+                        <td><input type="text" id="reason-${index}" value="${student.사유 || ""}"></td>
+                    </tr>
+                `;
+            });
+
+            document.querySelector("#attendanceTable tbody").innerHTML = tableContent;
+        }
+
+        // ✅ 출석 데이터 저장
+        async function saveAttendance() {
+            const rows = document.querySelectorAll("#attendanceTable tbody tr");
+            let data = [];
+
+            rows.forEach((row, index) => {
+                const name = row.children[0].innerText;
+                const attendanceStatus = document.querySelector(`input[name="attendance-${index}"]:checked`);
+                const reason = document.getElementById(`reason-${index}`).value;
+
+                if (attendanceStatus) {
+                    data.push({
+                        이름: name,
+                        출석상태: attendanceStatus.value,
+                        사유: reason
+                    });
+                }
+            });
+
+            try {
+                await fetch(API_URL + "/attendancerecord", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+                alert("출석 데이터가 저장되었습니다!");
+            } catch (error) {
+                console.error("출석 데이터를 저장하는 중 오류 발생:", error);
+                alert("저장 실패! 다시 시도해주세요.");
+            }
+        }
+
+        // 페이지 로드 시 출석 데이터 가져오기
+        fetchAttendanceData();
+    </script>
+
+</body>
+</html>
