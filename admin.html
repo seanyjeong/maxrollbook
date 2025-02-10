@@ -9,14 +9,13 @@
         table { width: 90%; margin: 20px auto; border-collapse: collapse; }
         th, td { padding: 10px; border: 1px solid black; text-align: center; }
         input, button, select { padding: 8px; margin: 5px; font-size: 16px; }
-        .filter-container { margin-top: 20px; }
+        .filter-container { margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
     <h2>학생 관리</h2>
 
-    <!-- ✅ 학생 추가 폼 -->
     <form id="studentForm">
         <input type="text" id="name" placeholder="이름" required>
         <input type="text" id="school" placeholder="학교">
@@ -57,30 +56,10 @@
         <tbody id="studentList"></tbody>
     </table>
 
-    <!-- ✅ 필터링 기능 -->
-    <div class="filter-container">
-        <label>학년: 
-            <select id="filter-grade">
-                <option value="">전체</option>
-                <option value="1">1학년</option>
-                <option value="2">2학년</option>
-                <option value="3">3학년</option>
-            </select>
-        </label>
-        <label>성별: 
-            <select id="filter-gender">
-                <option value="">전체</option>
-                <option value="남">남</option>
-                <option value="여">여</option>
-            </select>
-        </label>
-        <button onclick="loadStudents()">필터 적용</button>
-    </div>
-
     <script>
         const API_URL = "https://supermax.kr";
 
-        // ✅ 학생 추가 기능
+        // ✅ 학생 추가 기능 (입력 후 초기화, 추가 후 목록 새로고침)
         document.getElementById("studentForm").addEventListener("submit", async function (event) {
             event.preventDefault();
 
@@ -151,29 +130,50 @@
             loadStudents();
         }
 
-        // ✅ 학생 수정 기능 (출석 요일 포함)
+        // ✅ 수정 기능 (기존 코드 유지)
         function editStudent(id) {
-            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const row = document.querySelector(tr[data-id="${id}"]);
             const cells = row.children;
 
-            row.innerHTML = `
+            row.innerHTML = 
                 <td><input type="text" value="${cells[0].innerText}" id="edit-name-${id}"></td>
                 <td><input type="text" value="${cells[1].innerText}" id="edit-school-${id}"></td>
                 <td><input type="text" value="${cells[2].innerText}" id="edit-grade-${id}"></td>
+                <td><select id="edit-gender-${id}">
+                    <option value="남" ${cells[3].innerText === "남" ? "selected" : ""}>남</option>
+                    <option value="여" ${cells[3].innerText === "여" ? "selected" : ""}>여</option>
+                </select></td>
                 <td><input type="text" value="${cells[4].innerText}" id="edit-contact-${id}"></td>
+                <td>
+                    <label><input type="checkbox" id="edit-attend-mon-${id}"> 월</label>
+                    <label><input type="checkbox" id="edit-attend-tue-${id}"> 화</label>
+                    <label><input type="checkbox" id="edit-attend-wed-${id}"> 수</label>
+                    <label><input type="checkbox" id="edit-attend-thu-${id}"> 목</label>
+                    <label><input type="checkbox" id="edit-attend-fri-${id}"> 금</label>
+                    <label><input type="checkbox" id="edit-attend-sat-${id}"> 토</label>
+                    <label><input type="checkbox" id="edit-attend-sun-${id}"> 일</label>
+                </td>
                 <td><button onclick="saveEdit(${id})">저장</button></td>
-            `;
+            ;
         }
 
         async function saveEdit(id) {
             const updatedData = {
-                이름: document.getElementById(`edit-name-${id}`).value,
-                학교: document.getElementById(`edit-school-${id}`).value,
-                학년: document.getElementById(`edit-grade-${id}`).value,
-                연락처: document.getElementById(`edit-contact-${id}`).value,
+                이름: document.getElementById(edit-name-${id}).value,
+                학교: document.getElementById(edit-school-${id}).value,
+                학년: document.getElementById(edit-grade-${id}).value,
+                성별: document.getElementById(edit-gender-${id}).value,
+                연락처: document.getElementById(edit-contact-${id}).value,
+                출석_월: document.getElementById(edit-attend-mon-${id}).checked ? 1 : 0,
+                출석_화: document.getElementById(edit-attend-tue-${id}).checked ? 1 : 0,
+                출석_수: document.getElementById(edit-attend-wed-${id}).checked ? 1 : 0,
+                출석_목: document.getElementById(edit-attend-thu-${id}).checked ? 1 : 0,
+                출석_금: document.getElementById(edit-attend-fri-${id}).checked ? 1 : 0,
+                출석_토: document.getElementById(edit-attend-sat-${id}).checked ? 1 : 0,
+                출석_일: document.getElementById(edit-attend-sun-${id}).checked ? 1 : 0
             };
 
-            await fetch(API_URL + `/adminstudent/${id}`, {
+            await fetch(API_URL + /adminstudent/${id}, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updatedData),
