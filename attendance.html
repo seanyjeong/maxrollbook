@@ -72,8 +72,7 @@
             document.querySelector("#attendanceTable tbody").innerHTML = tableContent;
         }
 
-        // ✅ 출석 데이터 저장 (서버 엔드포인트에 맞게 수정)
-  async function saveAttendance() {
+async function saveAttendance() {
     const rows = document.querySelectorAll("#attendanceTable tbody tr");
     let data = [];
 
@@ -88,18 +87,16 @@
 
         const reason = document.getElementById(`reason-${index}`).value;
 
-        // ✅ 서버가 요구하는 Boolean 형식으로 변환
-        let attendance = false, late = false, absent = false;
-        if (selectedStatus.value === "출석") attendance = true;
-        if (selectedStatus.value === "지각") late = true;
-        if (selectedStatus.value === "결석") absent = true;
+        // ✅ 서버가 요구하는 "출석", "지각", "결석" 형태로 변환
+        let attendanceStatus = "";
+        if (selectedStatus.value === "출석") attendanceStatus = "출석";
+        if (selectedStatus.value === "지각") attendanceStatus = "지각";
+        if (selectedStatus.value === "결석") attendanceStatus = "결석";
 
         data.push({ 
             학생_id: studentId, 
-            attendance: attendance, 
-            late: late, 
-            absent: absent,
-            reason: reason
+            출석상태: attendanceStatus,  // ✅ 서버에서 요구하는 형식으로 변경
+            사유: reason
         });
     });
 
@@ -123,6 +120,7 @@
         alert("저장 실패! 다시 시도해주세요.");
     }
 }
+
 
 
         // ✅ 페이지 로드 시 출석 데이터 가져오기
