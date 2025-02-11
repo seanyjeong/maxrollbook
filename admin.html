@@ -81,6 +81,14 @@
     <script>
         const API_URL = "https://supermax.kr";
 
+        // ✅ formatAttendanceDays 함수 추가 (이거 없어서 오류 난 거였음!)
+        function formatAttendanceDays(s) {
+            return [
+                s.출석_월 ? "월" : "", s.출석_화 ? "화" : "", s.출석_수 ? "수" : "",
+                s.출석_목 ? "목" : "", s.출석_금 ? "금" : "", s.출석_토 ? "토" : "", s.출석_일 ? "일" : ""
+            ].filter(Boolean).join(" ");
+        }
+
         // ✅ 학생 추가 기능
         document.getElementById("studentForm").addEventListener("submit", async function (event) {
             event.preventDefault();
@@ -132,41 +140,13 @@
                 `).join("");
         }
 
-        // ✅ 수정 버튼 클릭 시
-        async function editStudent(id) {
-            const row = document.querySelector(`tr[data-id="${id}"]`);
-            const cells = row.children;
-
-            row.innerHTML = `
-                <td><input type="text" id="edit-name-${id}" value="${cells[0].innerText}"></td>
-                <td><input type="text" id="edit-school-${id}" value="${cells[1].innerText}"></td>
-                <td><input type="text" id="edit-grade-${id}" value="${cells[2].innerText}"></td>
-                <td><select id="edit-gender-${id}">
-                    <option value="남">남</option>
-                    <option value="여">여</option>
-                </select></td>
-                <td><input type="text" id="edit-contact-${id}" value="${cells[4].innerText}"></td>
-                <td>
-                    <label><input type="checkbox" id="edit-attend-mon-${id}"> 월</label>
-                    <label><input type="checkbox" id="edit-attend-tue-${id}"> 화</label>
-                    <label><input type="checkbox" id="edit-attend-wed-${id}"> 수</label>
-                    <label><input type="checkbox" id="edit-attend-thu-${id}"> 목</label>
-                    <label><input type="checkbox" id="edit-attend-fri-${id}"> 금</label>
-                    <label><input type="checkbox" id="edit-attend-sat-${id}"> 토</label>
-                    <label><input type="checkbox" id="edit-attend-sun-${id}"> 일</label>
-                </td>
-                <td><button onclick="saveEdit(${id})">저장</button></td>
-            `;
-        }
-
-        // ✅ 학생 정보 저장 기능
-        async function saveEdit(id) {
-            await fetch(API_URL + `/adminstudent/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ 이름: document.getElementById(`edit-name-${id}`).value })});
-            alert("수정 완료!");
+        async function deleteStudent(id) {
+            await fetch(API_URL + `/adminstudent/${id}`, { method: "DELETE" });
             loadStudents();
         }
 
         loadStudents();
     </script>
+
 </body>
 </html>
