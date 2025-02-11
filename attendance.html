@@ -73,51 +73,57 @@
         }
 
         // ✅ 출석 데이터 저장 (서버 엔드포인트에 맞게 수정)
-        async function saveAttendance() {
-            const rows = document.querySelectorAll("#attendanceTable tbody tr");
-            let data = [];
+  async function saveAttendance() {
+    const rows = document.querySelectorAll("#attendanceTable tbody tr");
+    let data = [];
 
-            rows.forEach((row, index) => {
-                const studentId = parseInt(row.getAttribute("data-id"), 10); // ✅ 정수 변환
-                const selectedStatus = document.querySelector(`input[name="status-${index}"]:checked`);
+    rows.forEach((row, index) => {
+        const studentId = parseInt(row.getAttribute("data-id"), 10); // ✅ 정수 변환
+        const selectedStatus = document.querySelector(`input[name="status-${index}"]:checked`);
 
-                if (!selectedStatus) {
-                    alert("출석 상태를 선택해주세요!");
-                    return;
-                }
-
-                const reason = document.getElementById(`reason-${index}`).value;
-
-                // ✅ 서버 엔드포인트가 원하는 데이터 구조로 변환
-                data.push({ 
-                    학생_id: studentId, 
-                    attendance: selectedStatus.value === "출석", 
-                    late: selectedStatus.value === "지각", 
-                    absent: selectedStatus.value === "결석",
-                    reason: reason
-                });
-            });
-
-            console.log("📌 서버로 전송할 출석 데이터:", JSON.stringify(data)); // ✅ 로그 추가
-
-            try {
-                const response = await fetch(API_URL + "/attendancerecord", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data),
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text(); // 서버 응답 내용을 확인
-                    throw new Error(`서버 오류: ${errorText}`);
-                }
-
-                alert("출석 데이터가 저장되었습니다!");
-            } catch (error) {
-                console.error("출석 데이터를 저장하는 중 오류 발생:", error);
-                alert("저장 실패! 다시 시도해주세요.");
-            }
+        if (!selectedStatus) {
+            alert("출석 상태를 선택해주세요!");
+            return;
         }
+
+        const reason = document.getElementById(`reason-${index}`).value;
+
+        // ✅ 서버가 요구하는 Boolean 형식으로 변환
+        let attendance = false, late = false, absent = false;
+        if (selectedStatus.value === "출석") attendance = true;
+        if (selectedStatus.value === "지각") late = true;
+        if (selectedStatus.value === "결석") absent = true;
+
+        data.push({ 
+            학생_id: studentId, 
+            attendance: attendance, 
+            late: late, 
+            absent: absent,
+            reason: reason
+        });
+    });
+
+    console.log("📌 서버로 전송할 출석 데이터:", JSON.stringify(data)); // ✅ 전송 데이터 로그 확인
+
+    try {
+        const response = await fetch(API_URL + "/attendancerecord", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text(); // 서버 응답 확인
+            throw new Error(`서버 오류: ${errorText}`);
+        }
+
+        alert("출석 데이터가 저장되었습니다!");
+    } catch (error) {
+        console.error("출석 데이터를 저장하는 중 오류 발생:", error);
+        alert("저장 실패! 다시 시도해주세요.");
+    }
+}
+
 
         // ✅ 페이지 로드 시 출석 데이터 가져오기
         fetchAttendanceData();
