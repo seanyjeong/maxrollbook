@@ -72,56 +72,41 @@
             document.querySelector("#attendanceTable tbody").innerHTML = tableContent;
         }
 
-async function saveAttendance() {
-    const rows = document.querySelectorAll("#attendanceTable tbody tr");
-    let data = [];
+app.post('/attendancerecord', async (req, res) => {
+    const attendanceData = req.body; // 요청 데이터 (배열)
 
-    rows.forEach((row, index) => {
-        const studentId = parseInt(row.getAttribute("data-id"), 10); // ✅ 학생 ID 정수 변환
-        const selectedStatus = document.querySelector(`input[name="status-${index}"]:checked`);
+    if (!Array.isArray(attendanceData) || attendanceData.length === 0) {
+        return res.status(400).json({ message: "출석 데이터가 비어있습니다." });
+    }
 
-        if (!selectedStatus) {
-            alert("출석 상태를 선택해주세요!");
-            return;
+    const query = `
+        INSERT INTO 25출석기록 (학생_id, 출석일, 출석상태, 사유) 
+        VALUES ? 
+        ON DUPLICATE KEY UPDATE 출석상태 = VALUES(출석상태), 사유 = VALUES(사유);
+    `;
+
+    // ✅ Boolean 값 → ENUM 값으로 변환
+    const values = attendanceData.map(({ 학생_id, attendance, late, absent, reason }) => {
+        let 출석상태 = null;
+        if (attendance === true) 출석상태 = "출석";
+        if (late === true) 출석상태 = "지각";
+        if (absent === true) 출석상태 = "결석";
+
+        if (!출석상태) {
+            return res.status(400).json({ message: `학생 ID ${학생_id}: 출석 상태가 올바르지 않습니다.` });
         }
 
-        const reason = document.getElementById(`reason-${index}`).value;
-
-        // ✅ 서버가 요구하는 Boolean 값으로 변환
-        let attendance = false, late = false, absent = false;
-        if (selectedStatus.value === "출석") attendance = true;
-        if (selectedStatus.value === "지각") late = true;
-        if (selectedStatus.value === "결석") absent = true;
-
-        data.push({ 
-            학생_id: studentId, 
-            attendance: attendance, 
-            late: late, 
-            absent: absent,
-            reason: reason
-        });
+        return [학생_id, new Date(), 출석상태, reason];
     });
 
-    console.log("📌 서버로 전송할 출석 데이터:", JSON.stringify(data)); // ✅ 전송 데이터 로그 확인
-
-    try {
-        const response = await fetch(API_URL + "/attendancerecord", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text(); // 서버 응답 확인
-            throw new Error(`서버 오류: ${errorText}`);
+    connection.query(query, [values], (err, result) => {
+        if (err) {
+            console.error('출석 체크 저장 오류:', err);
+            return res.status(500).json({ message: '출석 체크 저장 실패', error: err });
         }
-
-        alert("출석 데이터가 저장되었습니다!");
-    } catch (error) {
-        console.error("출석 데이터를 저장하는 중 오류 발생:", error);
-        alert("저장 실패! 다시 시도해주세요.");
-    }
-}
+        res.status(200).json({ message: '출석 체크 저장 완료' });
+    });
+});
 
 
 
