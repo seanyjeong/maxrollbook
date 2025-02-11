@@ -100,24 +100,15 @@
                 출석_일: document.getElementById("attend-sun").checked ? 1 : 0
             };
 
-            try {
-                const response = await fetch(API_URL + "/adminstudent", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(studentData),
-                });
+            await fetch(API_URL + "/adminstudent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(studentData),
+            });
 
-                if (!response.ok) {
-                    throw new Error("학생 추가 실패");
-                }
-
-                alert("학생 추가 완료!");
-                document.getElementById("studentForm").reset();
-                loadStudents();
-            } catch (error) {
-                console.error("학생 추가 오류:", error);
-                alert("학생 추가에 실패했습니다.");
-            }
+            alert("학생 추가 완료!");
+            document.getElementById("studentForm").reset();
+            loadStudents();
         });
 
         // ✅ 학생 목록 불러오기
@@ -141,13 +132,7 @@
                 `).join("");
         }
 
-        function formatAttendanceDays(s) {
-            return [
-                s.출석_월 ? "월" : "", s.출석_화 ? "화" : "", s.출석_수 ? "수" : "",
-                s.출석_목 ? "목" : "", s.출석_금 ? "금" : "", s.출석_토 ? "토" : "", s.출석_일 ? "일" : ""
-            ].filter(Boolean).join(" ");
-        }
-
+        // ✅ 수정 버튼 클릭 시
         async function editStudent(id) {
             const row = document.querySelector(`tr[data-id="${id}"]`);
             const cells = row.children;
@@ -174,8 +159,14 @@
             `;
         }
 
+        // ✅ 학생 정보 저장 기능
+        async function saveEdit(id) {
+            await fetch(API_URL + `/adminstudent/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ 이름: document.getElementById(`edit-name-${id}`).value })});
+            alert("수정 완료!");
+            loadStudents();
+        }
+
         loadStudents();
     </script>
-
 </body>
 </html>
