@@ -148,21 +148,22 @@
                     <option value="여" ${cells[3].innerText === "여" ? "selected" : ""}>여</option>
                 </select></td>
                 <td><input type="text" value="${cells[4].innerText}" id="edit-contact-${id}"></td>
-                <td>
-                    <label><input type="checkbox" id="edit-attend-mon-${id}"> 월</label>
-                    <label><input type="checkbox" id="edit-attend-tue-${id}"> 화</label>
-                    <label><input type="checkbox" id="edit-attend-wed-${id}"> 수</label>
-                    <label><input type="checkbox" id="edit-attend-thu-${id}"> 목</label>
-                    <label><input type="checkbox" id="edit-attend-fri-${id}"> 금</label>
-                    <label><input type="checkbox" id="edit-attend-sat-${id}"> 토</label>
-                    <label><input type="checkbox" id="edit-attend-sun-${id}"> 일</label>
+                <td><input type="checkbox" id="edit-attend-mon-${id}"> 월
+                    <input type="checkbox" id="edit-attend-tue-${id}"> 화
+                    <input type="checkbox" id="edit-attend-wed-${id}"> 수
+                    <input type="checkbox" id="edit-attend-thu-${id}"> 목
+                    <input type="checkbox" id="edit-attend-fri-${id}"> 금
+                    <input type="checkbox" id="edit-attend-sat-${id}"> 토
+                    <input type="checkbox" id="edit-attend-sun-${id}"> 일
                 </td>
                 <td><button onclick="saveEdit(${id})">저장</button></td>
             `;
         }
 
         async function saveEdit(id) {
-            alert(`학생 ID ${id} 저장 완료!`);
+            await fetch(API_URL + `/adminstudent/${id}`, { method: "PUT" });
+            alert(`학생 ID ${id} 수정 완료!`);
+            loadStudents();
         }
 
         loadStudents();
