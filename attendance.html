@@ -35,7 +35,6 @@
     <script>
         const API_URL = "https://supermax.kr";
 
-        // ✅ 오늘 날짜 및 요일 표시
         function updateDate() {
             const today = new Date();
             const dayNames = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
@@ -47,23 +46,26 @@
         async function fetchAttendanceData() {
             try {
                 const response = await fetch(API_URL + "/attendancetoday");
+                if (!response.ok) {
+                    throw new Error("출석 데이터를 불러오지 못함");
+                }
                 const students = await response.json();
+                console.log("📌 서버 응답 데이터:", students);
                 renderAttendance(students);
             } catch (error) {
                 console.error("출석 데이터를 불러오는 중 오류 발생:", error);
             }
         }
 
-        // ✅ 출석 데이터 테이블 렌더링
         function renderAttendance(students) {
             let tableContent = "";
             students.forEach((student, index) => {
                 tableContent += `
                     <tr data-id="${student.id}">
                         <td>${student.이름}</td>
-                        <td><input type="radio" name="status-${index}" value="출석"></td>
-                        <td><input type="radio" name="status-${index}" value="지각"></td>
-                        <td><input type="radio" name="status-${index}" value="결석"></td>
+                        <td><input type="radio" name="status-${index}" value="출석" ${student.출석상태 === 1 ? "checked" : ""}></td>
+                        <td><input type="radio" name="status-${index}" value="지각" ${student.출석상태 === 2 ? "checked" : ""}></td>
+                        <td><input type="radio" name="status-${index}" value="결석" ${student.출석상태 === 3 ? "checked" : ""}></td>
                         <td><input type="text" id="reason-${index}" value="${student.사유 || ""}"></td>
                     </tr>
                 `;
@@ -72,36 +74,15 @@
             document.querySelector("#attendanceTable tbody").innerHTML = tableContent;
         }
 
-        // ✅ 출석 데이터 저장
-        async function saveAttendance() {
-            const rows = document.querySelectorAll("#attendanceTable tbody tr");
-            let data = [];
-
-            rows.forEach((row, index) => {
-                const studentId = row.getAttribute("data-id");
-                const selectedStatus = document.querySelector(`input[name="status-${index}"]:checked`);
-
-                if (!selectedStatus) return alert("출석 상태를 선택해주세요!");
-
-                const reason = document.getElementById(`reason-${index}`).value;
-
-                data.push({ 학생_id: studentId, 출석상태: selectedStatus.value, 사유: reason });
-            });
-
-            try {
-                await fetch(API_URL + "/attendancerecord", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data),
-                });
-                alert("출석 데이터가 저장되었습니다!");
-            } catch (error) {
-                console.error("출석 데이터를 저장하는 중 오류 발생:", error);
-                alert("저장 실패! 다시 시도해주세요.");
+        function convertAttendanceStatus(status) {
+            switch (status) {
+                case "출석": return 1;
+                case "지각": return 2;
+                case "결석": return 3;
+                default: return 0;
             }
         }
 
-        // ✅ 페이지 로드 시 출석 데이터 가져오기
         fetchAttendanceData();
     </script>
 
