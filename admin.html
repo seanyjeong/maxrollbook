@@ -125,12 +125,8 @@
             const response = await fetch(API_URL + "/adminstudents");
             const students = await response.json();
 
-            const gradeFilter = document.getElementById("filter-grade").value;
-            const genderFilter = document.getElementById("filter-gender").value;
-
             const table = document.getElementById("studentList");
             table.innerHTML = students
-                .filter(s => (!gradeFilter || s.학년 === gradeFilter) && (!genderFilter || s.성별 === genderFilter))
                 .map(s => `
                     <tr data-id="${s.id}">
                         <td>${s.이름}</td>
@@ -152,12 +148,32 @@
             ].filter(Boolean).join(" ");
         }
 
-        async function deleteStudent(id) {
-            await fetch(API_URL + `/adminstudent/${id}`, { method: "DELETE" });
-            loadStudents();
+        async function editStudent(id) {
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const cells = row.children;
+
+            row.innerHTML = `
+                <td><input type="text" id="edit-name-${id}" value="${cells[0].innerText}"></td>
+                <td><input type="text" id="edit-school-${id}" value="${cells[1].innerText}"></td>
+                <td><input type="text" id="edit-grade-${id}" value="${cells[2].innerText}"></td>
+                <td><select id="edit-gender-${id}">
+                    <option value="남">남</option>
+                    <option value="여">여</option>
+                </select></td>
+                <td><input type="text" id="edit-contact-${id}" value="${cells[4].innerText}"></td>
+                <td>
+                    <label><input type="checkbox" id="edit-attend-mon-${id}"> 월</label>
+                    <label><input type="checkbox" id="edit-attend-tue-${id}"> 화</label>
+                    <label><input type="checkbox" id="edit-attend-wed-${id}"> 수</label>
+                    <label><input type="checkbox" id="edit-attend-thu-${id}"> 목</label>
+                    <label><input type="checkbox" id="edit-attend-fri-${id}"> 금</label>
+                    <label><input type="checkbox" id="edit-attend-sat-${id}"> 토</label>
+                    <label><input type="checkbox" id="edit-attend-sun-${id}"> 일</label>
+                </td>
+                <td><button onclick="saveEdit(${id})">저장</button></td>
+            `;
         }
 
-        // ✅ 페이지 로드 시 학생 목록 불러오기
         loadStudents();
     </script>
 
