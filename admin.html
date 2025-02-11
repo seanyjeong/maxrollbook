@@ -16,7 +16,6 @@
 
     <h2>학생 관리</h2>
 
-    <!-- 학생 추가 폼 -->
     <form id="studentForm">
         <input type="text" id="name" placeholder="이름" required>
         <input type="text" id="school" placeholder="학교">
@@ -42,7 +41,6 @@
 
     <h3>학생 목록</h3>
 
-    <!-- 필터 기능 -->
     <div class="filter-container">
         <label>학년: 
             <select id="filter-grade">
@@ -81,7 +79,6 @@
     <script>
         const API_URL = "https://supermax.kr";
 
-        // ✅ formatAttendanceDays 함수 추가 (이거 없어서 오류 난 거였음!)
         function formatAttendanceDays(s) {
             return [
                 s.출석_월 ? "월" : "", s.출석_화 ? "화" : "", s.출석_수 ? "수" : "",
@@ -89,7 +86,6 @@
             ].filter(Boolean).join(" ");
         }
 
-        // ✅ 학생 추가 기능
         document.getElementById("studentForm").addEventListener("submit", async function (event) {
             event.preventDefault();
 
@@ -119,7 +115,6 @@
             loadStudents();
         });
 
-        // ✅ 학생 목록 불러오기
         async function loadStudents() {
             const response = await fetch(API_URL + "/adminstudents");
             const students = await response.json();
@@ -140,9 +135,30 @@
                 `).join("");
         }
 
-        async function deleteStudent(id) {
-            await fetch(API_URL + `/adminstudent/${id}`, { method: "DELETE" });
-            loadStudents();
+        function editStudent(id) {
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const cells = row.children;
+
+            row.innerHTML = `
+                <td><input type="text" value="${cells[0].innerText}" id="edit-name-${id}"></td>
+                <td><input type="text" value="${cells[1].innerText}" id="edit-school-${id}"></td>
+                <td><input type="text" value="${cells[2].innerText}" id="edit-grade-${id}"></td>
+                <td><select id="edit-gender-${id}">
+                    <option value="남" ${cells[3].innerText === "남" ? "selected" : ""}>남</option>
+                    <option value="여" ${cells[3].innerText === "여" ? "selected" : ""}>여</option>
+                </select></td>
+                <td><input type="text" value="${cells[4].innerText}" id="edit-contact-${id}"></td>
+                <td>
+                    <label><input type="checkbox" id="edit-attend-mon-${id}"> 월</label>
+                    <label><input type="checkbox" id="edit-attend-tue-${id}"> 화</label>
+                    <label><input type="checkbox" id="edit-attend-wed-${id}"> 수</label>
+                    <label><input type="checkbox" id="edit-attend-thu-${id}"> 목</label>
+                    <label><input type="checkbox" id="edit-attend-fri-${id}"> 금</label>
+                    <label><input type="checkbox" id="edit-attend-sat-${id}"> 토</label>
+                    <label><input type="checkbox" id="edit-attend-sun-${id}"> 일</label>
+                </td>
+                <td><button onclick="saveEdit(${id})">저장</button></td>
+            `;
         }
 
         loadStudents();
