@@ -46,7 +46,7 @@
 
         async function fetchAttendanceData() {
             try {
-                const response = await fetch(API_URL + "/attendance/today");
+                const response = await fetch(API_URL + "/attendancetoday");
                 const students = await response.json();
                 renderAttendance(students);
             } catch (error) {
