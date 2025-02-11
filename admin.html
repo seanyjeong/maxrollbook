@@ -76,128 +76,138 @@
         <tbody id="studentList"></tbody>
     </table>
 
-    <script>
-        const API_URL = "https://supermax.kr";
+<script>
+    const API_URL = "https://supermax.kr";
 
-        function formatAttendanceDays(s) {
-            return [
-                s.출석_월 ? "월" : "", s.출석_화 ? "화" : "", s.출석_수 ? "수" : "",
-                s.출석_목 ? "목" : "", s.출석_금 ? "금" : "", s.출석_토 ? "토" : "", s.출석_일 ? "일" : ""
-            ].filter(Boolean).join(" ");
-        }
+    function formatAttendanceDays(s) {
+        return [
+            s.출석_월 ? "월" : "", s.출석_화 ? "화" : "", s.출석_수 ? "수" : "",
+            s.출석_목 ? "목" : "", s.출석_금 ? "금" : "", s.출석_토 ? "토" : "", s.출석_일 ? "일" : ""
+        ].filter(Boolean).join(" ");
+    }
 
-        document.getElementById("studentForm").addEventListener("submit", async function (event) {
-            event.preventDefault();
+    document.getElementById("studentForm").addEventListener("submit", async function (event) {
+        event.preventDefault();
 
-            const studentData = {
-                이름: document.getElementById("name").value,
-                학교: document.getElementById("school").value,
-                학년: document.getElementById("grade").value,
-                성별: document.getElementById("gender").value,
-                연락처: document.getElementById("contact").value,
-                출석_월: document.getElementById("attend-mon").checked ? 1 : 0,
-                출석_화: document.getElementById("attend-tue").checked ? 1 : 0,
-                출석_수: document.getElementById("attend-wed").checked ? 1 : 0,
-                출석_목: document.getElementById("attend-thu").checked ? 1 : 0,
-                출석_금: document.getElementById("attend-fri").checked ? 1 : 0,
-                출석_토: document.getElementById("attend-sat").checked ? 1 : 0,
-                출석_일: document.getElementById("attend-sun").checked ? 1 : 0
-            };
+        const studentData = {
+            이름: document.getElementById("name").value,
+            학교: document.getElementById("school").value,
+            학년: document.getElementById("grade").value,
+            성별: document.getElementById("gender").value,
+            연락처: document.getElementById("contact").value,
+            출석_월: document.getElementById("attend-mon").checked ? 1 : 0,
+            출석_화: document.getElementById("attend-tue").checked ? 1 : 0,
+            출석_수: document.getElementById("attend-wed").checked ? 1 : 0,
+            출석_목: document.getElementById("attend-thu").checked ? 1 : 0,
+            출석_금: document.getElementById("attend-fri").checked ? 1 : 0,
+            출석_토: document.getElementById("attend-sat").checked ? 1 : 0,
+            출석_일: document.getElementById("attend-sun").checked ? 1 : 0
+        };
 
-            await fetch(API_URL + "/adminstudent", {
-                method: "POST",
+        await fetch(API_URL + "/adminstudent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(studentData),
+        });
+
+        alert("학생 추가 완료!");
+        document.getElementById("studentForm").reset();
+        loadStudents();
+    });
+
+    async function loadStudents() {
+        const response = await fetch(API_URL + "/adminstudents");
+        const students = await response.json();
+
+        const gradeFilter = parseInt(document.getElementById("filter-grade").value) || null;
+        const genderFilter = document.getElementById("filter-gender").value;
+
+        const table = document.getElementById("studentList");
+        table.innerHTML = students
+            .filter(s => (!gradeFilter || parseInt(s.학년) === gradeFilter) && (!genderFilter || s.성별 === genderFilter))
+            .map(s => `
+                <tr data-id="${s.id}">
+                    <td>${s.이름}</td>
+                    <td>${s.학교}</td>
+                    <td>${s.학년}</td>
+                    <td>${s.성별}</td>
+                    <td>${s.연락처}</td>
+                    <td>${formatAttendanceDays(s)}</td>
+                    <td><button onclick="editStudent(${s.id}, ${s.출석_월}, ${s.출석_화}, ${s.출석_수}, ${s.출석_목}, ${s.출석_금}, ${s.출석_토}, ${s.출석_일})">수정</button></td>
+                    <td><button onclick="deleteStudent(${s.id})">삭제</button></td>
+                </tr>
+            `).join("");
+    }
+
+    function editStudent(id, mon, tue, wed, thu, fri, sat, sun) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        const cells = row.children;
+
+        row.innerHTML = `
+            <td><input type="text" value="${cells[0].innerText}" id="edit-name-${id}"></td>
+            <td><input type="text" value="${cells[1].innerText}" id="edit-school-${id}"></td>
+            <td><input type="number" value="${cells[2].innerText}" id="edit-grade-${id}"></td>
+            <td><select id="edit-gender-${id}">
+                <option value="남" ${cells[3].innerText === "남" ? "selected" : ""}>남</option>
+                <option value="여" ${cells[3].innerText === "여" ? "selected" : ""}>여</option>
+            </select></td>
+            <td><input type="text" value="${cells[4].innerText}" id="edit-contact-${id}"></td>
+            <td>
+                <label><input type="checkbox" id="edit-attend-mon-${id}" ${mon ? "checked" : ""}> 월</label>
+                <label><input type="checkbox" id="edit-attend-tue-${id}" ${tue ? "checked" : ""}> 화</label>
+                <label><input type="checkbox" id="edit-attend-wed-${id}" ${wed ? "checked" : ""}> 수</label>
+                <label><input type="checkbox" id="edit-attend-thu-${id}" ${thu ? "checked" : ""}> 목</label>
+                <label><input type="checkbox" id="edit-attend-fri-${id}" ${fri ? "checked" : ""}> 금</label>
+                <label><input type="checkbox" id="edit-attend-sat-${id}" ${sat ? "checked" : ""}> 토</label>
+                <label><input type="checkbox" id="edit-attend-sun-${id}" ${sun ? "checked" : ""}> 일</label>
+            </td>
+            <td><button onclick="saveEdit(${id})">저장</button></td>
+        `;
+    }
+
+    async function saveEdit(id) {
+        const updatedData = {
+            이름: document.getElementById(`edit-name-${id}`).value,
+            학교: document.getElementById(`edit-school-${id}`).value,
+            학년: document.getElementById(`edit-grade-${id}`).value,
+            성별: document.getElementById(`edit-gender-${id}`).value,
+            연락처: document.getElementById(`edit-contact-${id}`).value,
+            출석_월: document.getElementById(`edit-attend-mon-${id}`).checked ? 1 : 0,
+            출석_화: document.getElementById(`edit-attend-tue-${id}`).checked ? 1 : 0,
+            출석_수: document.getElementById(`edit-attend-wed-${id}`).checked ? 1 : 0,
+            출석_목: document.getElementById(`edit-attend-thu-${id}`).checked ? 1 : 0,
+            출석_금: document.getElementById(`edit-attend-fri-${id}`).checked ? 1 : 0,
+            출석_토: document.getElementById(`edit-attend-sat-${id}`).checked ? 1 : 0,
+            출석_일: document.getElementById(`edit-attend-sun-${id}`).checked ? 1 : 0
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/adminstudent/${id}`, {
+                method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(studentData),
+                body: JSON.stringify(updatedData),
             });
 
-            alert("학생 추가 완료!");
-            document.getElementById("studentForm").reset();
+            if (!response.ok) {
+                throw new Error("학생 수정 실패");
+            }
+
+            alert("학생 정보 수정 완료!");
             loadStudents();
-        });
-
-        async function loadStudents() {
-            const response = await fetch(API_URL + "/adminstudents");
-            const students = await response.json();
-
-            const table = document.getElementById("studentList");
-            table.innerHTML = students
-                .map(s => `
-                    <tr data-id="${s.id}">
-                        <td>${s.이름}</td>
-                        <td>${s.학교}</td>
-                        <td>${s.학년}</td>
-                        <td>${s.성별}</td>
-                        <td>${s.연락처}</td>
-                        <td>${formatAttendanceDays(s)}</td>
-                        <td><button onclick="editStudent(${s.id})">수정</button></td>
-                        <td><button onclick="deleteStudent(${s.id})">삭제</button></td>
-                    </tr>
-                `).join("");
+        } catch (error) {
+            console.error("학생 수정 오류:", error);
+            alert("학생 수정에 실패했습니다.");
         }
-
-        function editStudent(id) {
-            const row = document.querySelector(`tr[data-id="${id}"]`);
-            const cells = row.children;
-
-            row.innerHTML = `
-                <td><input type="text" value="${cells[0].innerText}" id="edit-name-${id}"></td>
-                <td><input type="text" value="${cells[1].innerText}" id="edit-school-${id}"></td>
-                <td><input type="text" value="${cells[2].innerText}" id="edit-grade-${id}"></td>
-                <td><select id="edit-gender-${id}">
-                    <option value="남" ${cells[3].innerText === "남" ? "selected" : ""}>남</option>
-                    <option value="여" ${cells[3].innerText === "여" ? "selected" : ""}>여</option>
-                </select></td>
-                <td><input type="text" value="${cells[4].innerText}" id="edit-contact-${id}"></td>
-                <td><input type="checkbox" id="edit-attend-mon-${id}"> 월
-                    <input type="checkbox" id="edit-attend-tue-${id}"> 화
-                    <input type="checkbox" id="edit-attend-wed-${id}"> 수
-                    <input type="checkbox" id="edit-attend-thu-${id}"> 목
-                    <input type="checkbox" id="edit-attend-fri-${id}"> 금
-                    <input type="checkbox" id="edit-attend-sat-${id}"> 토
-                    <input type="checkbox" id="edit-attend-sun-${id}"> 일
-                </td>
-                <td><button onclick="saveEdit(${id})">저장</button></td>
-            `;
-        }
-
-async function saveEdit(id) {
-    const updatedData = {
-        이름: document.getElementById(`edit-name-${id}`).value,
-        학교: document.getElementById(`edit-school-${id}`).value,
-        학년: document.getElementById(`edit-grade-${id}`).value,
-        성별: document.getElementById(`edit-gender-${id}`).value,
-        연락처: document.getElementById(`edit-contact-${id}`).value,
-        출석_월: document.getElementById(`edit-attend-mon-${id}`).checked ? 1 : 0,  // ✅ 1 또는 0
-        출석_화: document.getElementById(`edit-attend-tue-${id}`).checked ? 1 : 0,  // ✅ 1 또는 0
-        출석_수: document.getElementById(`edit-attend-wed-${id}`).checked ? 1 : 0,  // ✅ 1 또는 0
-        출석_목: document.getElementById(`edit-attend-thu-${id}`).checked ? 1 : 0,  // ✅ 1 또는 0
-        출석_금: document.getElementById(`edit-attend-fri-${id}`).checked ? 1 : 0,  // ✅ 1 또는 0
-        출석_토: document.getElementById(`edit-attend-sat-${id}`).checked ? 1 : 0,  // ✅ 1 또는 0
-        출석_일: document.getElementById(`edit-attend-sun-${id}`).checked ? 1 : 0   // ✅ 1 또는 0
-    };
-
-    try {
-        const response = await fetch(`${API_URL}/adminstudent/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedData),
-        });
-
-        if (!response.ok) {
-            throw new Error("학생 수정 실패");
-        }
-
-        alert("학생 정보 수정 완료!");
-        loadStudents();  // 수정 후 학생 목록 새로고침
-    } catch (error) {
-        console.error("학생 수정 오류:", error);
-        alert("학생 수정에 실패했습니다.");
     }
-}
 
-
+    async function deleteStudent(id) {
+        await fetch(API_URL + `/adminstudent/${id}`, { method: "DELETE" });
         loadStudents();
-    </script>
+    }
+
+    loadStudents();
+</script>
+
 
 </body>
 </html>
