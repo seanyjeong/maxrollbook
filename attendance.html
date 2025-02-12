@@ -86,106 +86,82 @@
     <div id="studentList"></div>
     <button id="saveAttendance">출석 저장</button>
 
-    <script>
-        const API_BASE = "https://supermax.kr";
+<script>
+    const API_BASE = "https://supermax.kr";
 
-        // 현재 날짜 표시 + 출석 인원 업데이트
-        function updateDate(studentCount = 0) {
-            const today = new Date();
-            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-            document.getElementById("dateDisplay").textContent = today.toLocaleDateString('ko-KR', options);
-            document.getElementById("totalStudents").textContent = `총원: ${studentCount}명`;
-        }
+    // 현재 날짜 표시 + 출석 인원 업데이트
+    function updateDate(studentCount = 0) {
+        const today = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        document.getElementById("dateDisplay").textContent = today.toLocaleDateString('ko-KR', options);
+        document.getElementById("totalStudents").textContent = `총원: ${studentCount}명`;
+    }
 
-        // 출석해야 할 학생 불러오기
-        async function fetchAttendanceData() {
+    // 출석해야 할 학생 불러오기 + 통계도 함께 가져오기
+    async function fetchAttendanceData() {
+        try {
             const response = await fetch(`${API_BASE}/attendancetoday`);
             const students = await response.json();
-            updateDate(students.length);  
-            renderStudentList(students);
+            updateDate(students.length);
+            renderStudentList(students);  // 🔹 학생 리스트 표시
+            await fetchAttendanceStats(); // 🔹 첫 로딩 시 출석 통계 가져오기
+        } catch (error) {
+            console.error("출석 데이터를 불러오는 중 오류 발생:", error);
         }
+    }
 
-        // 학생 리스트 렌더링 (처음엔 아무것도 체크되지 않음)
-        function renderStudentList(students) {
-            const listContainer = document.getElementById("studentList");
-            listContainer.innerHTML = "";
+    // 학생 리스트 렌더링
+    function renderStudentList(students) {
+        const listContainer = document.getElementById("studentList");
+        listContainer.innerHTML = "";
 
-            students.forEach(student => {
-                const card = document.createElement("div");
-                card.className = "attendance-card";
-                card.dataset.id = student.id;
-                
-                const studentInfo = document.createElement("div");
-                studentInfo.className = "student-info";
-                studentInfo.textContent = `${student.이름} (${student.학교}, ${student.학년}학년)`;
-                
-                const statusContainer = document.createElement("div");
-                statusContainer.className = "status-buttons";
-                
-                ["출석", "지각", "결석"].forEach(status => {
-                    const button = document.createElement("button");
-                    button.textContent = status;
-                    button.dataset.status = status;
+        students.forEach(student => {
+            const card = document.createElement("div");
+            card.className = "attendance-card";
+            card.dataset.id = student.id;
+            
+            const studentInfo = document.createElement("div");
+            studentInfo.className = "student-info";
+            studentInfo.textContent = `${student.이름} (${student.학교}, ${student.학년}학년)`;
+            
+            const statusContainer = document.createElement("div");
+            statusContainer.className = "status-buttons";
+            
+            ["출석", "지각", "결석"].forEach(status => {
+                const button = document.createElement("button");
+                button.textContent = status;
+                button.dataset.status = status;
 
-                    // 기존 출석 상태가 있으면 선택, 없으면 기본 미선택 상태
-                    if (student.출석상태 === status) {
-                        button.classList.add("selected");
-                    }
+                if (student.출석상태 === status) {
+                    button.classList.add("selected");
+                }
 
-                    button.addEventListener("click", function() {
-                        statusContainer.querySelectorAll("button").forEach(btn => btn.classList.remove("selected"));
-                        button.classList.add("selected");
-                        reasonInput.style.display = (status === "지각" || status === "결석") ? "block" : "none";
-                    });
-
-                    statusContainer.appendChild(button);
+                button.addEventListener("click", function() {
+                    statusContainer.querySelectorAll("button").forEach(btn => btn.classList.remove("selected"));
+                    button.classList.add("selected");
+                    reasonInput.style.display = (status === "지각" || status === "결석") ? "block" : "none";
                 });
 
-                // 사유 입력 (지각, 결석만)
-                const reasonInput = document.createElement("input");
-                reasonInput.className = "reason-input";
-                reasonInput.type = "text";
-                reasonInput.placeholder = "사유 입력 (선택)";
-                reasonInput.value = student.사유 || "";
-                reasonInput.style.display = student.출석상태 === "지각" || student.출석상태 === "결석" ? "block" : "none";
-
-                card.appendChild(studentInfo);
-                card.appendChild(statusContainer);
-                card.appendChild(reasonInput);
-                listContainer.appendChild(card);
-            });
-        }
-
-        // 출석 데이터 저장 후 통계 업데이트
-        async function saveAttendance() {
-            const records = [];
-            document.querySelectorAll(".attendance-card").forEach(card => {
-                const studentId = card.dataset.id;
-                const selectedButton = card.querySelector(".selected");
-                const selectedStatus = selectedButton ? selectedButton.dataset.status : null;
-                const reason = card.querySelector(".reason-input").value.trim();
-
-                if (!selectedStatus) return; // 선택되지 않은 학생은 기록하지 않음
-
-                records.push({
-                    학생_id: studentId,
-                    출석일: new Date().toISOString().split("T")[0], 
-                    출석상태: selectedStatus, 
-                    사유: reason || null
-                });
+                statusContainer.appendChild(button);
             });
 
-            await fetch(`${API_BASE}/attendancerecord`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(records)
-            });
+            const reasonInput = document.createElement("input");
+            reasonInput.className = "reason-input";
+            reasonInput.type = "text";
+            reasonInput.placeholder = "사유 입력 (선택)";
+            reasonInput.value = student.사유 || "";
+            reasonInput.style.display = student.출석상태 === "지각" || student.출석상태 === "결석" ? "block" : "none";
 
-            await fetchAttendanceStats(); // 저장 후 통계 업데이트
-        }
+            card.appendChild(studentInfo);
+            card.appendChild(statusContainer);
+            card.appendChild(reasonInput);
+            listContainer.appendChild(card);
+        });
+    }
 
-        // 출석 통계 가져오기
-        async function fetchAttendanceStats() {
+    // 출석 통계 가져오기 (페이지 로드 시)
+    async function fetchAttendanceStats() {
+        try {
             const today = new Date().toISOString().split("T")[0];
             const response = await fetch(`${API_BASE}/attendanceday?date=${today}`);
             const records = await response.json();
@@ -200,13 +176,56 @@
             document.getElementById("attendedCount").textContent = attended;
             document.getElementById("lateCount").textContent = late;
             document.getElementById("absentCount").textContent = absent;
+        } catch (error) {
+            console.error("출석 통계를 불러오는 중 오류 발생:", error);
         }
+    }
 
-        document.getElementById("saveAttendance").addEventListener("click", saveAttendance);
-        
-        updateDate();
-        fetchAttendanceData();
-    </script>
+    // 출석 데이터 저장 후 통계 업데이트 + 저장 완료 메시지
+    async function saveAttendance() {
+        const records = [];
+        document.querySelectorAll(".attendance-card").forEach(card => {
+            const studentId = card.dataset.id;
+            const selectedButton = card.querySelector(".selected");
+            const selectedStatus = selectedButton ? selectedButton.dataset.status : null;
+            const reason = card.querySelector(".reason-input").value.trim();
+
+            if (!selectedStatus) return;
+
+            records.push({
+                학생_id: studentId,
+                출석일: new Date().toISOString().split("T")[0], 
+                출석상태: selectedStatus, 
+                사유: reason || null
+            });
+        });
+
+        try {
+            const response = await fetch(`${API_BASE}/attendancerecord`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(records)
+            });
+
+            if (response.ok) {
+                alert("✅ 출석이 성공적으로 저장되었습니다!");
+                await fetchAttendanceStats(); // 🔹 저장 후 통계 업데이트
+            } else {
+                alert("❌ 출석 저장에 실패했습니다.");
+            }
+        } catch (error) {
+            console.error("출석 저장 중 오류 발생:", error);
+            alert("❌ 출석 저장 중 오류가 발생했습니다.");
+        }
+    }
+
+    document.getElementById("saveAttendance").addEventListener("click", saveAttendance);
+    
+    // 페이지 로드 시 실행
+    updateDate();
+    fetchAttendanceData();
+</script>
+
 
 </body>
 </html>
