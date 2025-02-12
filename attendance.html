@@ -6,10 +6,28 @@
     <title>출석부</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
+        body {
+            text-align: center;
+        }
         .header {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .date-container {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .attendance-stats {
+            font-size: 1em;
+            color: #555;
         }
         .attendance-card {
             display: flex;
@@ -50,13 +68,31 @@
             padding: 8px;
             font-size: 14px;
         }
+        #saveAttendance {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 24px;
+            font-size: 1.2em;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #saveAttendance:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2 id="dateDisplay">출석부</h2>
-        <p id="totalStudents">총원: 0명</p>
+        <div class="title">맥스체대입시 일산교육원 출석체크</div>
+        <div class="date-container">
+            <h2 id="dateDisplay">출석부</h2>
+            <p id="totalStudents">총원: 0명</p>
+            <p class="attendance-stats">출석: 0명 | 지각: 0명 | 결석: 0명</p>
+        </div>
     </div>
     
     <div id="studentList"></div>
@@ -66,18 +102,20 @@
         const API_BASE = "https://supermax.kr";
 
         // 현재 날짜 표시 + 출석 인원 업데이트
-        function updateDate(studentCount = 0) {
+        function updateDate(studentCount = 0, stats = { 출석: 0, 지각: 0, 결석: 0 }) {
             const today = new Date();
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
             document.getElementById("dateDisplay").textContent = today.toLocaleDateString('ko-KR', options);
             document.getElementById("totalStudents").textContent = `총원: ${studentCount}명`;
+            document.querySelector(".attendance-stats").textContent = 
+                `출석: ${stats.출석}명 | 지각: ${stats.지각}명 | 결석: ${stats.결석}명`;
         }
         
         // 출석해야 할 학생 불러오기
         async function fetchAttendanceData() {
             const response = await fetch(`${API_BASE}/attendancetoday`);
             const students = await response.json();
-            updateDate(students.length);  // 출석 인원수 업데이트
+            updateDate(students.length);
             renderStudentList(students);
         }
 
@@ -102,10 +140,9 @@
                     const button = document.createElement("button");
                     button.textContent = status;
                     button.dataset.status = status;
+
                     if (student.출석상태 === status) {
                         button.classList.add("selected");
-                    } else if (!student.출석상태 && status === "결석") {
-                        button.classList.add("selected");  // 기본값은 결석
                     }
 
                     button.addEventListener("click", function() {
@@ -135,10 +172,16 @@
         // 출석 데이터 저장
         async function saveAttendance() {
             const records = [];
+            let stats = { 출석: 0, 지각: 0, 결석: 0 };
+
             document.querySelectorAll(".attendance-card").forEach(card => {
                 const studentId = card.dataset.id;
-                const selectedStatus = card.querySelector(".selected").dataset.status;
+                const selectedButton = card.querySelector(".selected");
+                const selectedStatus = selectedButton ? selectedButton.dataset.status : null;
                 const reason = card.querySelector(".reason-input").value.trim();
+
+                if (selectedStatus) stats[selectedStatus]++;
+
                 records.push({
                     학생_id: studentId,
                     출석일: new Date().toISOString().split("T")[0], 
@@ -155,7 +198,8 @@
 
             const result = await response.json();
             alert(result.message);
-            fetchAttendanceData();  // 저장 후 다시 데이터 불러오기
+            updateDate(records.length, stats);
+            fetchAttendanceData();
         }
 
         document.getElementById("saveAttendance").addEventListener("click", saveAttendance);
