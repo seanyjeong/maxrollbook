@@ -6,52 +6,85 @@
     <title>출석부</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
-        .attendance-card {
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
+        }
+        .attendance-card {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
             border: 1px solid #ddd;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .student-info {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .status-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
         }
         .status-buttons button {
-            margin: 0 3px;
+            flex: 1;
+            padding: 10px;
+            margin: 2px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
-        .selected {
+        .status-buttons button.selected {
             font-weight: bold;
             background-color: #007BFF;
             color: white;
+        }
+        .reason-input {
+            display: none;
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
 
-    <h2 id="dateDisplay">출석부</h2>
+    <div class="header">
+        <h2 id="dateDisplay">출석부</h2>
+        <p id="totalStudents">총원: 0명</p>
+    </div>
+    
     <div id="studentList"></div>
     <button id="saveAttendance">출석 저장</button>
 
     <script>
-        const API_BASE = "https://supermax.kr";  // 서버 주소
+        const API_BASE = "https://supermax.kr";
 
-        // 현재 날짜 및 요일 표시
-        function updateDate() {
+        // 현재 날짜 표시 + 출석 인원 업데이트
+        function updateDate(studentCount = 0) {
             const today = new Date();
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
             document.getElementById("dateDisplay").textContent = today.toLocaleDateString('ko-KR', options);
+            document.getElementById("totalStudents").textContent = `총원: ${studentCount}명`;
         }
         
-        // 출석 데이터 가져오기
+        // 출석해야 할 학생 불러오기
         async function fetchAttendanceData() {
             const response = await fetch(`${API_BASE}/attendancetoday`);
             const students = await response.json();
+            updateDate(students.length);  // 출석 인원수 업데이트
             renderStudentList(students);
         }
 
         // 학생 리스트 렌더링
         function renderStudentList(students) {
             const listContainer = document.getElementById("studentList");
-            listContainer.innerHTML = ""; 
+            listContainer.innerHTML = "";
 
             students.forEach(student => {
                 const card = document.createElement("div");
@@ -59,7 +92,8 @@
                 card.dataset.id = student.id;
                 
                 const studentInfo = document.createElement("div");
-                studentInfo.innerHTML = `<strong>${student.이름}</strong> (${student.학교}, ${student.학년}학년)`;
+                studentInfo.className = "student-info";
+                studentInfo.textContent = `${student.이름} (${student.학교}, ${student.학년}학년)`;
                 
                 const statusContainer = document.createElement("div");
                 statusContainer.className = "status-buttons";
@@ -71,12 +105,13 @@
                     if (student.출석상태 === status) {
                         button.classList.add("selected");
                     } else if (!student.출석상태 && status === "결석") {
-                        button.classList.add("selected");  // 디폴트는 결석
+                        button.classList.add("selected");  // 기본값은 결석
                     }
 
                     button.addEventListener("click", function() {
                         statusContainer.querySelectorAll("button").forEach(btn => btn.classList.remove("selected"));
                         button.classList.add("selected");
+                        reasonInput.style.display = (status === "지각" || status === "결석") ? "block" : "none";
                     });
 
                     statusContainer.appendChild(button);
@@ -84,16 +119,11 @@
 
                 // 사유 입력 (지각, 결석만)
                 const reasonInput = document.createElement("input");
+                reasonInput.className = "reason-input";
                 reasonInput.type = "text";
                 reasonInput.placeholder = "사유 입력 (선택)";
                 reasonInput.value = student.사유 || "";
-                reasonInput.style.display = student.출석상태 === "지각" || student.출석상태 === "결석" ? "inline-block" : "none";
-
-                statusContainer.querySelectorAll("button").forEach(btn => {
-                    btn.addEventListener("click", function() {
-                        reasonInput.style.display = (btn.dataset.status === "지각" || btn.dataset.status === "결석") ? "inline-block" : "none";
-                    });
-                });
+                reasonInput.style.display = student.출석상태 === "지각" || student.출석상태 === "결석" ? "block" : "none";
 
                 card.appendChild(studentInfo);
                 card.appendChild(statusContainer);
@@ -108,7 +138,7 @@
             document.querySelectorAll(".attendance-card").forEach(card => {
                 const studentId = card.dataset.id;
                 const selectedStatus = card.querySelector(".selected").dataset.status;
-                const reason = card.querySelector("input").value.trim();
+                const reason = card.querySelector(".reason-input").value.trim();
                 records.push({
                     학생_id: studentId,
                     출석일: new Date().toISOString().split("T")[0], 
