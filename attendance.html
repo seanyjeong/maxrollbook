@@ -71,11 +71,6 @@
             margin: 20px auto;
             padding: 10px 20px;
             font-size: 18px;
-            cursor: pointer;
-        }
-        #saveAttendance:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
         }
     </style>
 </head>
@@ -163,9 +158,6 @@
 
         // 출석 데이터 저장 후 통계 업데이트
         async function saveAttendance() {
-            const saveButton = document.getElementById("saveAttendance");
-            saveButton.disabled = true; // 저장 중 버튼 비활성화
-
             const records = [];
             document.querySelectorAll(".attendance-card").forEach(card => {
                 const studentId = card.dataset.id;
@@ -190,11 +182,6 @@
             });
 
             await fetchAttendanceStats(); // 저장 후 통계 업데이트
-
-            // 출석 체크 완료 알림
-            alert("✅ 출석 체크가 완료되었습니다!");
-
-            saveButton.disabled = false; // 일정 시간 후 버튼 다시 활성화
         }
 
         // 출석 통계 가져오기
