@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출석부 달력</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <style>
+        body { text-align: center; }
+        .calendar-container {
+            max-width: 400px;
+            margin: auto;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .day {
+            padding: 10px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            text-align: center;
+            font-size: 14px;
+        }
+        .day:hover {
+            background-color: #f0f0f0;
+        }
+        .stats {
+            font-size: 12px;
+            color: #555;
+        }
+        .selected-day {
+            background-color: #007BFF;
+            color: white;
+        }
+        .attendance-list {
+            text-align: left;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+        .attendance-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>출석부 달력</h2>
+
+    <!-- 월 선택 -->
+    <label>월 선택:
+        <input type="month" id="monthPicker">
+    </label>
+    
+    <div class="calendar-container">
+        <div class="calendar" id="calendar"></div>
+    </div>
+
+    <h3 id="selectedDateTitle"></h3>
+    <div class="attendance-list" id="attendanceDetails"></div>
+
+    <script>
+        const API_BASE = "https://supermax.kr";
+        const calendar = document.getElementById("calendar");
+        const monthPicker = document.getElementById("monthPicker");
+        const selectedDateTitle = document.getElementById("selectedDateTitle");
+        const attendanceDetails = document.getElementById("attendanceDetails");
+
+        // 현재 월 설정
+        const today = new Date();
+        monthPicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        loadCalendarData();
+
+        // 월 변경 시 데이터 로드
+        monthPicker.addEventListener("change", loadCalendarData);
+
+        async function loadCalendarData() {
+            const [year, month] = monthPicker.value.split("-");
+            const response = await fetch(`${API_BASE}/attendancemonth?year=${year}&month=${month}`);
+            const attendanceData = await response.json();
+            
+            renderCalendar(year, month, attendanceData);
+        }
+
+        function renderCalendar(year, month, attendanceData) {
+            calendar.innerHTML = "";
+
+            const firstDay = new Date(year, month - 1, 1).getDay(); // 0 (일) ~ 6 (토)
+            const lastDate = new Date(year, month, 0).getDate(); // 월의 마지막 날짜
+            
+            // 빈 칸 채우기 (첫 주 요일 정렬)
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement("div");
+                calendar.appendChild(emptyCell);
+            }
+
+            // 날짜 채우기
+            for (let date = 1; date <= lastDate; date++) {
+                const dayElement = document.createElement("div");
+                dayElement.classList.add("day");
+                dayElement.textContent = date;
+
+                const fullDate = `${year}-${month.padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+                const attendanceInfo = attendanceData.find(d => d.출석일 === fullDate);
+
+                if (attendanceInfo) {
+                    const stats = document.createElement("div");
+                    stats.className = "stats";
+                    stats.innerHTML = `
+                        출석: ${attendanceInfo.출석} | 
+                        지각: ${attendanceInfo.지각} | 
+                        결석: ${attendanceInfo.결석}
+                    `;
+                    dayElement.appendChild(stats);
+                }
+
+                dayElement.addEventListener("click", () => loadAttendanceDetails(fullDate, dayElement));
+
+                calendar.appendChild(dayElement);
+            }
+        }
+
+        async function loadAttendanceDetails(date, selectedDay) {
+            document.querySelectorAll(".day").forEach(d => d.classList.remove("selected-day"));
+            selectedDay.classList.add("selected-day");
+            selectedDateTitle.textContent = `📅 ${date} 출석 상세`;
+
+            const response = await fetch(`${API_BASE}/attendanceday?date=${date}`);
+            const students = await response.json();
+
+            attendanceDetails.innerHTML = `
+                <ul>
+                    ${students.map(s => `
+                        <li><strong>${s.이름}</strong> (${s.학교}, ${s.학년}학년) - 
+                        <span style="color: ${s.출석상태 === '출석' ? 'green' : (s.출석상태 === '지각' ? 'orange' : 'red')}">
+                            ${s.출석상태}
+                        </span> 
+                        ${s.사유 ? `(${s.사유})` : ""}
+                        </li>
+                    `).join("")}
+                </ul>
+            `;
+        }
+    </script>
+
+</body>
+</html>
