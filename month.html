@@ -142,31 +142,37 @@
             }
         }
 
-        async function loadAttendanceDetails(date, selectedDay) {
-            document.querySelectorAll(".day").forEach(d => d.classList.remove("selected-day"));
-            selectedDay.classList.add("selected-day");
-            selectedDateTitle.textContent = `📅 ${date} 출석 상세`;
+     async function loadAttendanceDetails(date, selectedDay) {
+    document.querySelectorAll(".day").forEach(d => d.classList.remove("selected-day"));
+    selectedDay.classList.add("selected-day");
+    selectedDateTitle.textContent = `📅 ${date} 출석 상세`;
 
-            const response = await fetch(`${API_BASE}/attendanceday?date=${date}`);
-            const students = await response.json();
-            const dayOfWeek = new Date(date).getDay(); // 0 (일) ~ 6 (토)
+    const response = await fetch(`${API_BASE}/attendanceday?date=${date}`);
+    const students = await response.json();
+    const dayOfWeek = new Date(date).getDay(); // 0 (일) ~ 6 (토)
 
-            // ✅ 해당 요일 출석 대상 학생만 필터링
-            const filteredStudents = students.filter(s => s[`출석_${['일', '월', '화', '수', '목', '금', '토'][dayOfWeek]}`] === 1);
+    // ✅ 해당 요일 출석 대상 학생만 필터링
+    const filteredStudents = students.filter(s => {
+        const attendKey = ['출석_일', '출석_월', '출석_화', '출석_수', '출석_목', '출석_금', '출석_토'][dayOfWeek];
+        return s[attendKey] === 1;
+    });
 
-            attendanceDetails.innerHTML = `
-                <ul>
-                    ${filteredStudents.map(s => `
-                        <li><strong>${s.이름}</strong> (${s.학교}, ${s.학년}학년) - 
-                        <span style="color: ${s.출석상태 === '출석' ? 'green' : (s.출석상태 === '지각' ? 'orange' : 'red')}">
-                            ${s.출석상태 || '미입력'}
-                        </span> 
-                        ${s.사유 ? `(${s.사유})` : ""}
-                        </li>
-                    `).join("")}
-                </ul>
-            `;
-        }
+    attendanceDetails.innerHTML = `
+        <ul>
+            ${filteredStudents.length > 0 ? 
+                filteredStudents.map(s => `
+                    <li><strong>${s.이름}</strong> (${s.학교}, ${s.학년}학년) - 
+                    <span style="color: ${s.출석상태 === '출석' ? 'green' : (s.출석상태 === '지각' ? 'orange' : 'red')}">
+                        ${s.출석상태 || '미입력'}
+                    </span> 
+                    ${s.사유 ? `(${s.사유})` : ""}
+                    </li>
+                `).join("") 
+                : `<li>해당 요일에 출석해야 할 학생이 없습니다.</li>`
+            }
+        </ul>
+    `;
+}
     </script>
 
 </body>
