@@ -8,11 +8,21 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
     </style>
+    <script>
+        function goToAdminPage() {
+            const password = prompt("관리자 비밀번호를 입력하세요:");
+            if (password === "2580") {  // 원하는 비밀번호로 변경 가능
+                location.href = 'admin.html';
+            } else {
+                alert("비밀번호가 틀렸습니다.");
+            }
+        }
+    </script>
 </head>
 <body>
 
     <h2>출석 관리 시스템</h2>
-    <button onclick="location.href='admin.html'">관리자 페이지</button>
+    <button onclick="goToAdminPage()">관리자 페이지</button>
     <button onclick="location.href='attendance.html'">출석 체크</button>
 
 </body>
