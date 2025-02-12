@@ -6,10 +6,25 @@
     <title>출석부</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
+        body {
+            text-align: center;
+        }
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .date {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .stats {
+            margin-top: 10px;
+            font-size: 16px;
         }
         .attendance-card {
             display: flex;
@@ -19,6 +34,7 @@
             margin-bottom: 8px;
             border-radius: 5px;
             background: #f9f9f9;
+            text-align: left;
         }
         .student-info {
             font-size: 1.1em;
@@ -50,19 +66,22 @@
             padding: 8px;
             font-size: 14px;
         }
-        .stats {
-            margin-top: 10px;
-            font-size: 16px;
+        #saveAttendance {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2 id="dateDisplay">출석부</h2>
+        <div class="title">맥스체대입시 일산교육원 출석체크</div>
+        <div id="dateDisplay" class="date">출석부</div>
         <p id="totalStudents">총원: 0명</p>
+        <p class="stats">출석: <span id="attendedCount">0</span> | 지각: <span id="lateCount">0</span> | 결석: <span id="absentCount">0</span></p>
     </div>
-    <p class="stats">출석: <span id="attendedCount">0</span> | 지각: <span id="lateCount">0</span> | 결석: <span id="absentCount">0</span></p>
     
     <div id="studentList"></div>
     <button id="saveAttendance">출석 저장</button>
@@ -108,6 +127,7 @@
                     button.textContent = status;
                     button.dataset.status = status;
 
+                    // 기존 출석 상태가 있으면 선택, 없으면 기본 미선택 상태
                     if (student.출석상태 === status) {
                         button.classList.add("selected");
                     }
@@ -144,10 +164,13 @@
                 const selectedButton = card.querySelector(".selected");
                 const selectedStatus = selectedButton ? selectedButton.dataset.status : null;
                 const reason = card.querySelector(".reason-input").value.trim();
+
+                if (!selectedStatus) return; // 선택되지 않은 학생은 기록하지 않음
+
                 records.push({
                     학생_id: studentId,
                     출석일: new Date().toISOString().split("T")[0], 
-                    출석상태: selectedStatus || "결석", 
+                    출석상태: selectedStatus, 
                     사유: reason || null
                 });
             });
