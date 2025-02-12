@@ -17,12 +17,18 @@
             gap: 5px;
             margin-top: 10px;
         }
-        .day {
+        .day, .weekday {
             padding: 10px;
             border: 1px solid #ddd;
-            cursor: pointer;
             text-align: center;
             font-size: 14px;
+        }
+        .weekday {
+            font-weight: bold;
+            background: #f0f0f0;
+        }
+        .day {
+            cursor: pointer;
         }
         .day:hover {
             background-color: #f0f0f0;
@@ -56,7 +62,16 @@
     </label>
     
     <div class="calendar-container">
-        <div class="calendar" id="calendar"></div>
+        <div class="calendar" id="calendar">
+            <!-- 요일 표시 -->
+            <div class="weekday">일</div>
+            <div class="weekday">월</div>
+            <div class="weekday">화</div>
+            <div class="weekday">수</div>
+            <div class="weekday">목</div>
+            <div class="weekday">금</div>
+            <div class="weekday">토</div>
+        </div>
     </div>
 
     <h3 id="selectedDateTitle"></h3>
@@ -86,12 +101,16 @@
         }
 
         function renderCalendar(year, month, attendanceData) {
-            calendar.innerHTML = "";
+            // 기존 내용 초기화 후 요일 추가
+            calendar.innerHTML = `
+                <div class="weekday">일</div><div class="weekday">월</div><div class="weekday">화</div>
+                <div class="weekday">수</div><div class="weekday">목</div><div class="weekday">금</div><div class="weekday">토</div>
+            `;
 
             const firstDay = new Date(year, month - 1, 1).getDay(); // 0 (일) ~ 6 (토)
             const lastDate = new Date(year, month, 0).getDate(); // 월의 마지막 날짜
             
-            // 빈 칸 채우기 (첫 주 요일 정렬)
+            // 빈 칸 추가 (해당 월의 시작 요일 맞추기)
             for (let i = 0; i < firstDay; i++) {
                 const emptyCell = document.createElement("div");
                 calendar.appendChild(emptyCell);
@@ -130,13 +149,17 @@
 
             const response = await fetch(`${API_BASE}/attendanceday?date=${date}`);
             const students = await response.json();
+            const dayOfWeek = new Date(date).getDay(); // 0 (일) ~ 6 (토)
+
+            // ✅ 해당 요일 출석 대상 학생만 필터링
+            const filteredStudents = students.filter(s => s[`출석_${['일', '월', '화', '수', '목', '금', '토'][dayOfWeek]}`] === 1);
 
             attendanceDetails.innerHTML = `
                 <ul>
-                    ${students.map(s => `
+                    ${filteredStudents.map(s => `
                         <li><strong>${s.이름}</strong> (${s.학교}, ${s.학년}학년) - 
                         <span style="color: ${s.출석상태 === '출석' ? 'green' : (s.출석상태 === '지각' ? 'orange' : 'red')}">
-                            ${s.출석상태}
+                            ${s.출석상태 || '미입력'}
                         </span> 
                         ${s.사유 ? `(${s.사유})` : ""}
                         </li>
