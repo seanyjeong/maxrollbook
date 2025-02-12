@@ -10,11 +10,64 @@
         th, td { padding: 10px; border: 1px solid black; text-align: center; }
         input, button, select { padding: 8px; margin: 5px; font-size: 16px; }
         .filter-container { margin-bottom: 15px; }
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 20px auto;
+            max-width: 1000px;
+        }
+        .stat-box {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px 20px;
+            margin: 5px;
+            min-width: 150px;
+        }
+        .stat-box h4 {
+            margin: 0;
+            color: #666;
+        }
+        .stat-box p {
+            margin: 5px 0;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
     </style>
 </head>
 <body>
 
     <h2>학생 관리</h2>
+
+    <!-- 통계 정보 컨테이너 -->
+    <div class="stats-container">
+        <div class="stat-box">
+            <h4>총 인원</h4>
+            <p id="total-count">0명</p>
+        </div>
+        <div class="stat-box">
+            <h4>1학년</h4>
+            <p id="grade1-count">0명</p>
+        </div>
+        <div class="stat-box">
+            <h4>2학년</h4>
+            <p id="grade2-count">0명</p>
+        </div>
+        <div class="stat-box">
+            <h4>3학년</h4>
+            <p id="grade3-count">0명</p>
+        </div>
+        <div class="stat-box">
+            <h4>남자</h4>
+            <p id="male-count">0명</p>
+        </div>
+        <div class="stat-box">
+            <h4>여자</h4>
+            <p id="female-count">0명</p>
+        </div>
+    </div>
 
     <form id="studentForm">
         <input type="text" id="name" placeholder="이름" required>
@@ -63,6 +116,7 @@
     <table>
         <thead>
             <tr>
+                <th>번호</th>
                 <th>이름</th>
                 <th>학교</th>
                 <th>학년</th>
@@ -84,6 +138,24 @@
             s.출석_월 ? "월" : "", s.출석_화 ? "화" : "", s.출석_수 ? "수" : "",
             s.출석_목 ? "목" : "", s.출석_금 ? "금" : "", s.출석_토 ? "토" : "", s.출석_일 ? "일" : ""
         ].filter(Boolean).join(" ");
+    }
+
+    function updateStats(students) {
+        const stats = {
+            total: students.length,
+            grade1: students.filter(s => parseInt(s.학년) === 1).length,
+            grade2: students.filter(s => parseInt(s.학년) === 2).length,
+            grade3: students.filter(s => parseInt(s.학년) === 3).length,
+            male: students.filter(s => s.성별 === "남").length,
+            female: students.filter(s => s.성별 === "여").length
+        };
+
+        document.getElementById("total-count").textContent = `${stats.total}명`;
+        document.getElementById("grade1-count").textContent = `${stats.grade1}명`;
+        document.getElementById("grade2-count").textContent = `${stats.grade2}명`;
+        document.getElementById("grade3-count").textContent = `${stats.grade3}명`;
+        document.getElementById("male-count").textContent = `${stats.male}명`;
+        document.getElementById("female-count").textContent = `${stats.female}명`;
     }
 
     document.getElementById("studentForm").addEventListener("submit", async function (event) {
@@ -122,11 +194,18 @@
         const gradeFilter = parseInt(document.getElementById("filter-grade").value) || null;
         const genderFilter = document.getElementById("filter-gender").value;
 
+        const filteredStudents = students.filter(s => 
+            (!gradeFilter || parseInt(s.학년) === gradeFilter) && 
+            (!genderFilter || s.성별 === genderFilter)
+        );
+
+        updateStats(students); // 전체 통계는 필터와 관계없이 보여줌
+
         const table = document.getElementById("studentList");
-        table.innerHTML = students
-            .filter(s => (!gradeFilter || parseInt(s.학년) === gradeFilter) && (!genderFilter || s.성별 === genderFilter))
-            .map(s => `
+        table.innerHTML = filteredStudents
+            .map((s, index) => `
                 <tr data-id="${s.id}">
+                    <td>${index + 1}</td>
                     <td>${s.이름}</td>
                     <td>${s.학교}</td>
                     <td>${s.학년}</td>
@@ -142,16 +221,18 @@
     function editStudent(id, mon, tue, wed, thu, fri, sat, sun) {
         const row = document.querySelector(`tr[data-id="${id}"]`);
         const cells = row.children;
+        const number = cells[0].innerText; // 번호 저장
 
         row.innerHTML = `
-            <td><input type="text" value="${cells[0].innerText}" id="edit-name-${id}"></td>
-            <td><input type="text" value="${cells[1].innerText}" id="edit-school-${id}"></td>
-            <td><input type="number" value="${cells[2].innerText}" id="edit-grade-${id}"></td>
+            <td>${number}</td>
+            <td><input type="text" value="${cells[1].innerText}" id="edit-name-${id}"></td>
+            <td><input type="text" value="${cells[2].innerText}" id="edit-school-${id}"></td>
+            <td><input type="number" value="${cells[3].innerText}" id="edit-grade-${id}"></td>
             <td><select id="edit-gender-${id}">
-                <option value="남" ${cells[3].innerText === "남" ? "selected" : ""}>남</option>
-                <option value="여" ${cells[3].innerText === "여" ? "selected" : ""}>여</option>
+                <option value="남" ${cells[4].innerText === "남" ? "selected" : ""}>남</option>
+                <option value="여" ${cells[4].innerText === "여" ? "selected" : ""}>여</option>
             </select></td>
-            <td><input type="text" value="${cells[4].innerText}" id="edit-contact-${id}"></td>
+            <td><input type="text" value="${cells[5].innerText}" id="edit-contact-${id}"></td>
             <td>
                 <label><input type="checkbox" id="edit-attend-mon-${id}" ${mon ? "checked" : ""}> 월</label>
                 <label><input type="checkbox" id="edit-attend-tue-${id}" ${tue ? "checked" : ""}> 화</label>
@@ -162,6 +243,7 @@
                 <label><input type="checkbox" id="edit-attend-sun-${id}" ${sun ? "checked" : ""}> 일</label>
             </td>
             <td><button onclick="saveEdit(${id})">저장</button></td>
+            <td><button onclick="loadStudents()">취소</button></td>
         `;
     }
 
@@ -201,13 +283,14 @@
     }
 
     async function deleteStudent(id) {
-        await fetch(API_URL + `/adminstudent/${id}`, { method: "DELETE" });
-        loadStudents();
+        if (confirm("정말 삭제하시겠습니까?")) {
+            await fetch(API_URL + `/adminstudent/${id}`, { method: "DELETE" });
+            loadStudents();
+        }
     }
 
     loadStudents();
 </script>
-
 
 </body>
 </html>
