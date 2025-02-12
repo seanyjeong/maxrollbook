@@ -50,6 +50,10 @@
             padding: 8px;
             font-size: 14px;
         }
+        .stats {
+            margin-top: 10px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -58,6 +62,7 @@
         <h2 id="dateDisplay">출석부</h2>
         <p id="totalStudents">총원: 0명</p>
     </div>
+    <p class="stats">출석: <span id="attendedCount">0</span> | 지각: <span id="lateCount">0</span> | 결석: <span id="absentCount">0</span></p>
     
     <div id="studentList"></div>
     <button id="saveAttendance">출석 저장</button>
@@ -72,16 +77,16 @@
             document.getElementById("dateDisplay").textContent = today.toLocaleDateString('ko-KR', options);
             document.getElementById("totalStudents").textContent = `총원: ${studentCount}명`;
         }
-        
+
         // 출석해야 할 학생 불러오기
         async function fetchAttendanceData() {
             const response = await fetch(`${API_BASE}/attendancetoday`);
             const students = await response.json();
-            updateDate(students.length);  // 출석 인원수 업데이트
+            updateDate(students.length);  
             renderStudentList(students);
         }
 
-        // 학생 리스트 렌더링
+        // 학생 리스트 렌더링 (처음엔 아무것도 체크되지 않음)
         function renderStudentList(students) {
             const listContainer = document.getElementById("studentList");
             listContainer.innerHTML = "";
@@ -102,10 +107,9 @@
                     const button = document.createElement("button");
                     button.textContent = status;
                     button.dataset.status = status;
+
                     if (student.출석상태 === status) {
                         button.classList.add("selected");
-                    } else if (!student.출석상태 && status === "결석") {
-                        button.classList.add("selected");  // 기본값은 결석
                     }
 
                     button.addEventListener("click", function() {
@@ -132,30 +136,47 @@
             });
         }
 
-        // 출석 데이터 저장
+        // 출석 데이터 저장 후 통계 업데이트
         async function saveAttendance() {
             const records = [];
             document.querySelectorAll(".attendance-card").forEach(card => {
                 const studentId = card.dataset.id;
-                const selectedStatus = card.querySelector(".selected").dataset.status;
+                const selectedButton = card.querySelector(".selected");
+                const selectedStatus = selectedButton ? selectedButton.dataset.status : null;
                 const reason = card.querySelector(".reason-input").value.trim();
                 records.push({
                     학생_id: studentId,
                     출석일: new Date().toISOString().split("T")[0], 
-                    출석상태: selectedStatus,
+                    출석상태: selectedStatus || "결석", 
                     사유: reason || null
                 });
             });
 
-            const response = await fetch(`${API_BASE}/attendancerecord`, {
+            await fetch(`${API_BASE}/attendancerecord`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(records)
             });
 
-            const result = await response.json();
-            alert(result.message);
-            fetchAttendanceData();  // 저장 후 다시 데이터 불러오기
+            await fetchAttendanceStats(); // 저장 후 통계 업데이트
+        }
+
+        // 출석 통계 가져오기
+        async function fetchAttendanceStats() {
+            const today = new Date().toISOString().split("T")[0];
+            const response = await fetch(`${API_BASE}/attendanceday?date=${today}`);
+            const records = await response.json();
+
+            let attended = 0, late = 0, absent = 0;
+            records.forEach(record => {
+                if (record.출석상태 === "출석") attended++;
+                else if (record.출석상태 === "지각") late++;
+                else if (record.출석상태 === "결석") absent++;
+            });
+
+            document.getElementById("attendedCount").textContent = attended;
+            document.getElementById("lateCount").textContent = late;
+            document.getElementById("absentCount").textContent = absent;
         }
 
         document.getElementById("saveAttendance").addEventListener("click", saveAttendance);
