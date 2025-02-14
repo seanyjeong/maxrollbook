@@ -112,6 +112,8 @@
 
     // 학생 리스트 렌더링
     function renderStudentList(students) {
+
+         students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
         const listContainer = document.getElementById("studentList");
         listContainer.innerHTML = "";
 
