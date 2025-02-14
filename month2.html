@@ -64,11 +64,20 @@
             });
         }
 
-        async function loadAttendance(studentId, year, month) {
-            const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
-            const attendanceData = await res.json();
-            renderCalendar(year, month, attendanceData);
-        }
+async function loadAttendance(studentId, year, month) {
+    console.log(`📡 요청 중... 학생ID: ${studentId}, 년도: ${year}, 월: ${month}`);
+
+    try {
+        const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
+        const attendanceData = await res.json();
+
+        console.log(`✅ 응답 데이터 (${studentId}):`, attendanceData);
+
+        renderCalendar(year, month, attendanceData);
+    } catch (error) {
+        console.error(`❌ 데이터 로드 실패 (${studentId}):`, error);
+    }
+}
 
         function renderCalendar(year, month, attendanceData) {
             calendar.innerHTML = '';
@@ -131,13 +140,18 @@
             `;
         }
 
-        function handleSelectionChange() {
-            const studentId = studentSelect.value;
-            const [year, month] = monthSelect.value.split('-');
-            if (studentId && year && month) {
-                loadAttendance(studentId, year, month);
-            }
-        }
+function handleSelectionChange() {
+    const studentId = studentSelect.value;
+    const [year, month] = monthSelect.value.split('-');
+
+    console.log(`📣 선택한 학생 ID: ${studentId}, 선택한 월: ${year}-${month}`);
+
+    if (studentId && year && month) {
+        loadAttendance(studentId, year, month);
+    } else {
+        console.warn('⚠️ 학생ID, 연도, 월이 유효하지 않습니다.');
+    }
+}
 
         monthSelect.addEventListener('change', handleSelectionChange);
         studentSelect.addEventListener('change', handleSelectionChange);
