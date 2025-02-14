@@ -229,6 +229,29 @@ for (let date = 1; date <= lastDate; date++) {
         }
 
         loadStudents();
+
+        <button id="savePdfBtn">PDF로 저장</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    document.getElementById("savePdfBtn").addEventListener("click", () => {
+        const studentName = studentSelect.options[studentSelect.selectedIndex].text;
+        const month = monthPicker.value;
+
+        const element = document.createElement('div');
+        element.innerHTML = `
+            <h3>${studentName} (${month} 출결현황)</h3>
+            <div>${calendar.outerHTML}</div>
+            <div>${summary.outerHTML}</div>
+        `;
+
+        html2pdf(element, {
+            margin: 10,
+            filename: `${studentName}_${month}_출결현황.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        });
+    });
     </script>
 
 </body>
