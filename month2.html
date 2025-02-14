@@ -88,7 +88,9 @@
 
     <!-- 학생 선택 -->
     <label>학생 선택:
-        <select id="studentSelect"></select>
+        <select id="studentSelect">
+            <option value="">학생을 선택하세요</option>
+        </select>
     </label>
 
     <!-- 월 선택 -->
@@ -129,9 +131,7 @@
             const res = await fetch(`${API_BASE}/adminstudents`);
             const students = await res.json();
 
-            studentSelect.innerHTML = students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
-
-            loadAttendance();
+            studentSelect.innerHTML = `<option value="">학생을 선택하세요</option>` + students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
         }
 
         // 학생, 월 변경 시 출석 데이터 로드
@@ -140,15 +140,17 @@
 
         async function loadAttendance() {
             const studentId = studentSelect.value;
-            const [year, month] = monthPicker.value.split("-");
+            if (!studentId) {
+                calendar.innerHTML = `<div class="weekday">일</div><div class="weekday">월</div><div class="weekday">화</div><div class="weekday">수</div><div class="weekday">목</div><div class="weekday">금</div><div class="weekday">토</div>`;
+                summary.innerHTML = `<p>총 출석해야 할 일수: 0일</p><p>출석: 0일, 지각: 0일, 결석: 0일</p>`;
+                return;
+            }
 
-            console.log(`📡 요청 중... 학생ID: ${studentId}, 년도: ${year}, 월: ${month}`);
+            const [year, month] = monthPicker.value.split("-");
 
             try {
                 const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
                 const attendanceData = await res.json();
-
-                console.log(`✅ 응답 데이터 (${studentId}):`, attendanceData);
 
                 renderCalendar(year, month, attendanceData);
                 updateMonthlySummary(attendanceData);
@@ -172,12 +174,10 @@
             const firstDay = new Date(year, month - 1, 1).getDay();
             const lastDate = new Date(year, month, 0).getDate();
 
-            // 빈 칸 추가
             for (let i = 0; i < firstDay; i++) {
                 calendar.innerHTML += `<div></div>`;
             }
 
-            // 날짜 채우기
             for (let date = 1; date <= lastDate; date++) {
                 const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
                 const attendanceRecord = attendanceData.find(d => d.출석일.startsWith(fullDate));
@@ -200,15 +200,13 @@
             }
         }
 
-        // 월별 출석 통계 요약
         function updateMonthlySummary(attendanceData) {
             const 출석일수 = attendanceData.filter(d => d.출석상태 === '출석').length;
             const 지각일수 = attendanceData.filter(d => d.출석상태 === '지각').length;
             const 결석일수 = attendanceData.filter(d => d.출석상태 === '결석').length;
-            const 총출석일수 = 출석일수 + 지각일수 + 결석일수;
 
             summary.innerHTML = `
-                <p>총 출석해야 할 일수: ${총출석일수}일</p>
+                <p>총 출석해야 할 일수: ${attendanceData.length}일</p>
                 <p>출석: ${출석일수}일, 지각: ${지각일수}일, 결석: ${결석일수}일</p>
             `;
         }
