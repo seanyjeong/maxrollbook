@@ -182,27 +182,35 @@ async function loadStudents() {
                 calendar.innerHTML += `<div></div>`;
             }
 
-            for (let date = 1; date <= lastDate; date++) {
-                const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-                const attendanceRecord = attendanceData.find(d => d.출석일.split('T')[0] === fullDate);
+for (let date = 1; date <= lastDate; date++) {
+    const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
 
+    const attendanceRecord = attendanceData.find(d => {
+        const recordDate = d.출석일.split('T')[0];
+        console.log(`🔍 비교 중 - 캘린더: ${fullDate}, 기록: ${recordDate}`);
+        return recordDate === fullDate;
+    });
 
-                const dayCell = document.createElement('div');
-                dayCell.classList.add('day');
-                dayCell.textContent = date;
+    const dayCell = document.createElement('div');
+    dayCell.classList.add('day');
+    dayCell.textContent = date;
 
-                if (attendanceRecord) {
-                    dayCell.dataset.status = attendanceRecord.출석상태;
-                    if (attendanceRecord.사유) {
-                        const tooltip = document.createElement('div');
-                        tooltip.classList.add('tooltip');
-                        tooltip.textContent = `사유: ${attendanceRecord.사유}`;
-                        dayCell.appendChild(tooltip);
-                    }
-                }
+    if (attendanceRecord) {
+        console.log(`✅ 기록 있음 - 날짜: ${fullDate}, 상태: ${attendanceRecord.출석상태}, 사유: ${attendanceRecord.사유}`);
+        dayCell.dataset.status = attendanceRecord.출석상태;
+        if (attendanceRecord.사유) {
+            const tooltip = document.createElement('div');
+            tooltip.classList.add('tooltip');
+            tooltip.textContent = `사유: ${attendanceRecord.사유}`;
+            dayCell.appendChild(tooltip);
+        }
+    } else {
+        console.log(`❌ 기록 없음 - 날짜: ${fullDate}`);
+    }
 
-                calendar.appendChild(dayCell);
-            }
+    calendar.appendChild(dayCell);
+}
+
         }
 
         function updateMonthlySummary(attendanceData) {
