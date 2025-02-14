@@ -184,7 +184,8 @@ async function loadStudents() {
 
             for (let date = 1; date <= lastDate; date++) {
                 const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-                const attendanceRecord = attendanceData.find(d => d.출석일.startsWith(fullDate));
+                const attendanceRecord = attendanceData.find(d => d.출석일.split('T')[0] === fullDate);
+
 
                 const dayCell = document.createElement('div');
                 dayCell.classList.add('day');
