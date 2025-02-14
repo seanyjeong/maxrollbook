@@ -98,6 +98,9 @@
         <input type="month" id="monthPicker">
     </label>
 
+    <!-- PDF 저장 버튼 -->
+    <button id="savePdfBtn">PDF로 저장</button>
+
     <div class="calendar-container" id="pdfContent">
         <div id="pdfHeader"></div>
 
@@ -116,8 +119,6 @@
             <p>출석: 0일, 지각: 0일, 결석: 0일</p>
         </div>
     </div>
-
-    <button id="savePdfBtn">PDF로 저장</button>
 
     <!-- html2pdf 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -152,9 +153,9 @@
         async function loadAttendance() {
             const studentId = studentSelect.value;
             if (!studentId) {
+                pdfHeader.innerHTML = '';
                 calendar.innerHTML = `<div class="weekday">일</div><div class="weekday">월</div><div class="weekday">화</div><div class="weekday">수</div><div class="weekday">목</div><div class="weekday">금</div><div class="weekday">토</div>`;
                 summary.innerHTML = `<p>총 출석해야 할 일수: 0일</p><p>출석: 0일, 지각: 0일, 결석: 0일</p>`;
-                pdfHeader.innerHTML = '';
                 return;
             }
 
@@ -166,6 +167,7 @@
 
                 renderCalendar(year, month, attendanceData);
                 updateMonthlySummary(attendanceData);
+
                 const studentName = studentSelect.options[studentSelect.selectedIndex].text;
                 pdfHeader.innerHTML = `<h3>${studentName} (${year}년 ${month}월 출결현황)</h3>`;
             } catch (error) {
@@ -201,12 +203,6 @@
 
                 if (record) {
                     dayCell.dataset.status = record.출석상태;
-                    if (record.사유) {
-                        const tooltip = document.createElement('div');
-                        tooltip.classList.add('tooltip');
-                        tooltip.textContent = `사유: ${record.사유}`;
-                        dayCell.appendChild(tooltip);
-                    }
                 }
 
                 calendar.appendChild(dayCell);
