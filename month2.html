@@ -127,12 +127,16 @@
         monthPicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
         // 학생 목록 불러오기
-        async function loadStudents() {
-            const res = await fetch(`${API_BASE}/adminstudents`);
-            const students = await res.json();
+async function loadStudents() {
+    const res = await fetch(`${API_BASE}/adminstudents`);
+    const students = await res.json();
 
-            studentSelect.innerHTML = `<option value="">학생을 선택하세요</option>` + students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
-        }
+    // 이름 가나다순 정렬
+    students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
+
+    studentSelect.innerHTML = `<option value="">학생을 선택하세요</option>` + students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
+}
+
 
         // 학생, 월 변경 시 출석 데이터 로드
         studentSelect.addEventListener("change", loadAttendance);
