@@ -3,124 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>학생 출석 달력</title>
+    <title>학생 월별 출석현황</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
-        body { text-align: center; }
-        .calendar-container { max-width: 400px; margin: auto; }
-        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
-        .day, .weekday { padding: 10px; border: 1px solid #ddd; text-align: center; font-size: 14px; position: relative; }
-        .weekday { font-weight: bold; background: #f0f0f0; }
-        .day { cursor: pointer; }
-        .day:hover { background-color: #f0f0f0; }
-        .attended { background-color: #28a745; color: white; }
-        .late { background-color: #ffc107; color: black; }
-        .absent { background-color: #dc3545; color: white; }
-        .tooltip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background-color: black; color: white; padding: 5px; border-radius: 4px; white-space: nowrap; z-index: 10; }
-        .day:hover .tooltip { display: block; }
-        .summary { margin-top: 20px; font-size: 16px; }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        .day, .weekday {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .weekday {
+            font-weight: bold;
+            background: #f0f0f0;
+        }
+        .day.attend { background-color: #d4edda; } /* 출석 */
+        .day.late { background-color: #fff3cd; }    /* 지각 */
+        .day.absent { background-color: #f8d7da; }  /* 결석 */
+        .day:hover { cursor: pointer; background-color: #f1f1f1; }
+        .summary { margin-top: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
-    <h2>학생 출석 달력</h2>
-    <label for="studentSelect">학생 선택: </label>
-    <select id="studentSelect"></select>
-    <br>
-    <label>월 선택:
-        <input type="month" id="monthPicker">
-    </label>
-    
-    <div class="calendar-container">
-        <div class="calendar" id="calendar"></div>
-    </div>
 
-    <div class="summary" id="attendanceSummary"></div>
+    <h2>학생 월별 출석현황</h2>
+
+    <label for="studentSelect">학생 선택:</label>
+    <select id="studentSelect"></select>
+
+    <label for="monthSelect">월 선택:</label>
+    <input type="month" id="monthSelect">
+
+    <div class="calendar" id="calendar"></div>
+
+    <div id="hoverInfo" class="summary"></div>
+    <div id="monthSummary" class="summary"></div>
 
     <script>
         const API_BASE = "https://supermax.kr";
-        const calendar = document.getElementById("calendar");
-        const monthPicker = document.getElementById("monthPicker");
-        const studentSelect = document.getElementById("studentSelect");
-        const attendanceSummary = document.getElementById("attendanceSummary");
 
-        const today = new Date();
-        monthPicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const studentSelect = document.getElementById("studentSelect");
+        const monthSelect = document.getElementById("monthSelect");
+        const calendar = document.getElementById("calendar");
+        const hoverInfo = document.getElementById("hoverInfo");
+        const monthSummary = document.getElementById("monthSummary");
 
         async function loadStudents() {
-            const response = await fetch(`${API_BASE}/adminstudents`);
-            const students = await response.json();
-            studentSelect.innerHTML = students.map(s => `<option value="${s.id}">${s.이름}</option>`).join("");
-            loadAttendanceData();
+            const res = await fetch(`${API_BASE}/adminstudents`);
+            const students = await res.json();
+
+            studentSelect.innerHTML = `<option value="">학생 선택</option>`;
+            students.forEach(student => {
+                const option = document.createElement("option");
+                option.value = student.id;
+                option.textContent = `${student.이름} (${student.학교}, ${student.학년}학년)`;
+                studentSelect.appendChild(option);
+            });
         }
 
-        async function loadAttendanceData() {
-            const studentId = studentSelect.value;
-            const [year, month] = monthPicker.value.split("-");
-
-            const response = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
-            const attendanceData = await response.json();
-
+        async function loadAttendance(studentId, year, month) {
+            const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
+            const attendanceData = await res.json();
             renderCalendar(year, month, attendanceData);
         }
 
         function renderCalendar(year, month, attendanceData) {
-            calendar.innerHTML = `
-                <div class="weekday">일</div><div class="weekday">월</div><div class="weekday">화</div>
-                <div class="weekday">수</div><div class="weekday">목</div><div class="weekday">금</div><div class="weekday">토</div>
-            `;
+            calendar.innerHTML = '';
 
             const firstDay = new Date(year, month - 1, 1).getDay();
             const lastDate = new Date(year, month, 0).getDate();
 
+            // 요일 헤더 추가
+            ['일', '월', '화', '수', '목', '금', '토'].forEach(day => {
+                const div = document.createElement('div');
+                div.className = 'weekday';
+                div.textContent = day;
+                calendar.appendChild(div);
+            });
+
+            // 빈칸 채우기 (첫째 날 위치 맞추기)
             for (let i = 0; i < firstDay; i++) {
-                const emptyCell = document.createElement("div");
+                const emptyCell = document.createElement('div');
                 calendar.appendChild(emptyCell);
             }
 
-            let attended = 0, late = 0, absent = 0, totalDays = 0;
+            let attendCount = 0, lateCount = 0, absentCount = 0, totalDays = 0;
 
             for (let date = 1; date <= lastDate; date++) {
-                const dayElement = document.createElement("div");
-                dayElement.classList.add("day");
-                dayElement.textContent = date;
-
                 const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
                 const record = attendanceData.find(r => r.출석일 === fullDate);
 
+                const dayCell = document.createElement('div');
+                dayCell.classList.add('day');
+                dayCell.textContent = date;
+
                 if (record) {
                     totalDays++;
-                    let statusClass = "";
-                    if (record.출석상태 === "출석") {
-                        statusClass = "attended";
-                        attended++;
-                    } else if (record.출석상태 === "지각") {
-                        statusClass = "late";
-                        late++;
-                    } else if (record.출석상태 === "결석") {
-                        statusClass = "absent";
-                        absent++;
+                    if (record.출석상태 === '출석') {
+                        dayCell.classList.add('attend');
+                        attendCount++;
+                    } else if (record.출석상태 === '지각') {
+                        dayCell.classList.add('late');
+                        lateCount++;
+                    } else if (record.출석상태 === '결석') {
+                        dayCell.classList.add('absent');
+                        absentCount++;
                     }
-                    if (statusClass) dayElement.classList.add(statusClass);
 
-                    if (record.사유) {
-                        const tooltip = document.createElement("div");
-                        tooltip.className = "tooltip";
-                        tooltip.textContent = `사유: ${record.사유}`;
-                        dayElement.appendChild(tooltip);
-                    }
+                    dayCell.addEventListener('mouseover', () => {
+                        hoverInfo.textContent = `${record.출석일}: ${record.출석상태} ${record.사유 ? `- ${record.사유}` : ''}`;
+                    });
+
+                    dayCell.addEventListener('mouseleave', () => {
+                        hoverInfo.textContent = '';
+                    });
                 }
 
-                calendar.appendChild(dayElement);
+                calendar.appendChild(dayCell);
             }
 
-            attendanceSummary.innerHTML = `
-                총 출석 대상일: ${totalDays}일 | 출석: ${attended}일 | 지각: ${late}일 | 결석: ${absent}일
+            monthSummary.innerHTML = `
+                총 출석일수: ${totalDays}일<br>
+                출석: ${attendCount}일 | 지각: ${lateCount}일 | 결석: ${absentCount}일
             `;
         }
 
-        studentSelect.addEventListener("change", loadAttendanceData);
-        monthPicker.addEventListener("change", loadAttendanceData);
+        function handleSelectionChange() {
+            const studentId = studentSelect.value;
+            const [year, month] = monthSelect.value.split('-');
+            if (studentId && year && month) {
+                loadAttendance(studentId, year, month);
+            }
+        }
 
+        monthSelect.addEventListener('change', handleSelectionChange);
+        studentSelect.addEventListener('change', handleSelectionChange);
+
+        // 초기화
+        monthSelect.value = new Date().toISOString().slice(0, 7);
         loadStudents();
     </script>
 </body>
