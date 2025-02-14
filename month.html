@@ -157,11 +157,18 @@ async function loadAttendanceDetails(date, selectedDay) {
         return s[attendKey] === 1;
     });
 
+    // ✅ 출석 상태별 인원 수 계산
+    const attendanceCounts = {
+        출석: filteredStudents.filter(s => s.출석상태 === '출석').length,
+        지각: filteredStudents.filter(s => s.출석상태 === '지각').length,
+        결석: filteredStudents.filter(s => s.출석상태 === '결석').length
+    };
+
     // ✅ 총 출석 대상 인원 수 계산
     const totalAttendance = filteredStudents.length;
 
     attendanceDetails.innerHTML = `
-        <h4>총 출석 대상: ${totalAttendance}명</h4>
+        <h4>총 출석 대상: ${totalAttendance}명 (출석: ${attendanceCounts.출석}, 지각: ${attendanceCounts.지각}, 결석: ${attendanceCounts.결석})</h4>
         <ul>
             ${filteredStudents.length > 0 ? 
                 filteredStudents.map(s => `
@@ -177,7 +184,6 @@ async function loadAttendanceDetails(date, selectedDay) {
         </ul>
     `;
 }
-
 
     </script>
 
