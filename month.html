@@ -125,16 +125,16 @@
                 const fullDate = `${year}-${month.padStart(2, '0')}-${String(date).padStart(2, '0')}`;
                 const attendanceInfo = attendanceData.find(d => d.출석일 === fullDate);
 
-                if (attendanceInfo) {
-                    const stats = document.createElement("div");
-                    stats.className = "stats";
-                    stats.innerHTML = `
-                        출석: ${attendanceInfo.출석} | 
-                        지각: ${attendanceInfo.지각} | 
-                        결석: ${attendanceInfo.결석}
-                    `;
-                    dayElement.appendChild(stats);
-                }
+                // if (attendanceInfo) {
+                //     const stats = document.createElement("div");
+                //     stats.className = "stats";
+                //     stats.innerHTML = `
+                //         출석: ${attendanceInfo.출석} | 
+                //         지각: ${attendanceInfo.지각} | 
+                //         결석: ${attendanceInfo.결석}
+                //     `;
+                //     dayElement.appendChild(stats);
+                // }
 
                 dayElement.addEventListener("click", () => loadAttendanceDetails(fullDate, dayElement));
 
