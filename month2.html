@@ -1,164 +1,221 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>학생 월별 출석현황</title>
+    <title>학생별 월 출석 현황</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
+        body {
+            text-align: center;
+        }
+
+        .calendar-container {
+            max-width: 400px;
+            margin: auto;
+        }
+
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 5px;
+            margin-top: 10px;
         }
-        .day, .weekday {
-            padding: 8px;
+
+        .day,
+        .weekday {
+            padding: 10px;
             border: 1px solid #ddd;
             text-align: center;
+            font-size: 14px;
         }
+
         .weekday {
             font-weight: bold;
             background: #f0f0f0;
         }
-        .day.attend { background-color: #d4edda; } /* 출석 */
-        .day.late { background-color: #fff3cd; }    /* 지각 */
-        .day.absent { background-color: #f8d7da; }  /* 결석 */
-        .day:hover { cursor: pointer; background-color: #f1f1f1; }
-        .summary { margin-top: 10px; font-size: 14px; }
+
+        .day {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .day:hover {
+            background-color: #f0f0f0;
+        }
+
+        .day[data-status="출석"] {
+            background-color: lightgreen;
+        }
+
+        .day[data-status="지각"] {
+            background-color: orange;
+        }
+
+        .day[data-status="결석"] {
+            background-color: lightcoral;
+        }
+
+        .tooltip {
+            visibility: hidden;
+            background-color: black;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+
+        .day:hover .tooltip {
+            visibility: visible;
+        }
+
+        .summary {
+            margin-top: 20px;
+        }
     </style>
 </head>
+
 <body>
 
-    <h2>학생 월별 출석현황</h2>
+    <h2>학생별 월 출석 현황</h2>
 
-    <label for="studentSelect">학생 선택:</label>
-    <select id="studentSelect"></select>
+    <!-- 학생 선택 -->
+    <label>학생 선택:
+        <select id="studentSelect"></select>
+    </label>
 
-    <label for="monthSelect">월 선택:</label>
-    <input type="month" id="monthSelect">
+    <!-- 월 선택 -->
+    <label>월 선택:
+        <input type="month" id="monthPicker">
+    </label>
 
-    <div class="calendar" id="calendar"></div>
+    <div class="calendar-container">
+        <div class="calendar" id="calendar">
+            <div class="weekday">일</div>
+            <div class="weekday">월</div>
+            <div class="weekday">화</div>
+            <div class="weekday">수</div>
+            <div class="weekday">목</div>
+            <div class="weekday">금</div>
+            <div class="weekday">토</div>
+        </div>
+    </div>
 
-    <div id="hoverInfo" class="summary"></div>
-    <div id="monthSummary" class="summary"></div>
+    <div class="summary" id="summary">
+        <p>총 출석해야 할 일수: 0일</p>
+        <p>출석: 0일, 지각: 0일, 결석: 0일</p>
+    </div>
 
     <script>
         const API_BASE = "https://supermax.kr";
-
-        const studentSelect = document.getElementById("studentSelect");
-        const monthSelect = document.getElementById("monthSelect");
         const calendar = document.getElementById("calendar");
-        const hoverInfo = document.getElementById("hoverInfo");
-        const monthSummary = document.getElementById("monthSummary");
+        const monthPicker = document.getElementById("monthPicker");
+        const studentSelect = document.getElementById("studentSelect");
+        const summary = document.getElementById("summary");
 
+        // 현재 월 설정
+        const today = new Date();
+        monthPicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+        // 학생 목록 불러오기
         async function loadStudents() {
             const res = await fetch(`${API_BASE}/adminstudents`);
             const students = await res.json();
 
-            studentSelect.innerHTML = `<option value="">학생 선택</option>`;
-            students.forEach(student => {
-                const option = document.createElement("option");
-                option.value = student.id;
-                option.textContent = `${student.이름} (${student.학교}, ${student.학년}학년)`;
-                studentSelect.appendChild(option);
-            });
+            studentSelect.innerHTML = students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
+
+            loadAttendance();
         }
 
-async function loadAttendance(studentId, year, month) {
-    console.log(`📡 요청 중... 학생ID: ${studentId}, 년도: ${year}, 월: ${month}`);
+        // 학생, 월 변경 시 출석 데이터 로드
+        studentSelect.addEventListener("change", loadAttendance);
+        monthPicker.addEventListener("change", loadAttendance);
 
-    try {
-        const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
-        const attendanceData = await res.json();
+        async function loadAttendance() {
+            const studentId = studentSelect.value;
+            const [year, month] = monthPicker.value.split("-");
 
-        console.log(`✅ 응답 데이터 (${studentId}):`, attendanceData);
+            console.log(`📡 요청 중... 학생ID: ${studentId}, 년도: ${year}, 월: ${month}`);
 
-        renderCalendar(year, month, attendanceData);
-    } catch (error) {
-        console.error(`❌ 데이터 로드 실패 (${studentId}):`, error);
-    }
-}
+            try {
+                const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
+                const attendanceData = await res.json();
 
+                console.log(`✅ 응답 데이터 (${studentId}):`, attendanceData);
+
+                renderCalendar(year, month, attendanceData);
+                updateMonthlySummary(attendanceData);
+            } catch (error) {
+                console.error(`❌ 데이터 로드 실패 (${studentId}):`, error);
+            }
+        }
+
+        // 달력 렌더링
         function renderCalendar(year, month, attendanceData) {
-            calendar.innerHTML = '';
+            calendar.innerHTML = `
+                <div class="weekday">일</div>
+                <div class="weekday">월</div>
+                <div class="weekday">화</div>
+                <div class="weekday">수</div>
+                <div class="weekday">목</div>
+                <div class="weekday">금</div>
+                <div class="weekday">토</div>
+            `;
 
             const firstDay = new Date(year, month - 1, 1).getDay();
             const lastDate = new Date(year, month, 0).getDate();
 
-            // 요일 헤더 추가
-            ['일', '월', '화', '수', '목', '금', '토'].forEach(day => {
-                const div = document.createElement('div');
-                div.className = 'weekday';
-                div.textContent = day;
-                calendar.appendChild(div);
-            });
-
-            // 빈칸 채우기 (첫째 날 위치 맞추기)
+            // 빈 칸 추가
             for (let i = 0; i < firstDay; i++) {
-                const emptyCell = document.createElement('div');
-                calendar.appendChild(emptyCell);
+                calendar.innerHTML += `<div></div>`;
             }
 
-            let attendCount = 0, lateCount = 0, absentCount = 0, totalDays = 0;
-
+            // 날짜 채우기
             for (let date = 1; date <= lastDate; date++) {
                 const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-                const record = attendanceData.find(r => r.출석일 === fullDate);
+                const attendanceRecord = attendanceData.find(d => d.출석일.startsWith(fullDate));
 
                 const dayCell = document.createElement('div');
                 dayCell.classList.add('day');
                 dayCell.textContent = date;
 
-                if (record) {
-                    totalDays++;
-                    if (record.출석상태 === '출석') {
-                        dayCell.classList.add('attend');
-                        attendCount++;
-                    } else if (record.출석상태 === '지각') {
-                        dayCell.classList.add('late');
-                        lateCount++;
-                    } else if (record.출석상태 === '결석') {
-                        dayCell.classList.add('absent');
-                        absentCount++;
+                if (attendanceRecord) {
+                    dayCell.dataset.status = attendanceRecord.출석상태;
+                    if (attendanceRecord.사유) {
+                        const tooltip = document.createElement('div');
+                        tooltip.classList.add('tooltip');
+                        tooltip.textContent = `사유: ${attendanceRecord.사유}`;
+                        dayCell.appendChild(tooltip);
                     }
-
-                    dayCell.addEventListener('mouseover', () => {
-                        hoverInfo.textContent = `${record.출석일}: ${record.출석상태} ${record.사유 ? `- ${record.사유}` : ''}`;
-                    });
-
-                    dayCell.addEventListener('mouseleave', () => {
-                        hoverInfo.textContent = '';
-                    });
                 }
 
                 calendar.appendChild(dayCell);
             }
+        }
 
-            monthSummary.innerHTML = `
-                총 출석일수: ${totalDays}일<br>
-                출석: ${attendCount}일 | 지각: ${lateCount}일 | 결석: ${absentCount}일
+        // 월별 출석 통계 요약
+        function updateMonthlySummary(attendanceData) {
+            const 출석일수 = attendanceData.filter(d => d.출석상태 === '출석').length;
+            const 지각일수 = attendanceData.filter(d => d.출석상태 === '지각').length;
+            const 결석일수 = attendanceData.filter(d => d.출석상태 === '결석').length;
+            const 총출석일수 = 출석일수 + 지각일수 + 결석일수;
+
+            summary.innerHTML = `
+                <p>총 출석해야 할 일수: ${총출석일수}일</p>
+                <p>출석: ${출석일수}일, 지각: ${지각일수}일, 결석: ${결석일수}일</p>
             `;
         }
 
-function handleSelectionChange() {
-    const studentId = studentSelect.value;
-    const [year, month] = monthSelect.value.split('-');
-
-    console.log(`📣 선택한 학생 ID: ${studentId}, 선택한 월: ${year}-${month}`);
-
-    if (studentId && year && month) {
-        loadAttendance(studentId, year, month);
-    } else {
-        console.warn('⚠️ 학생ID, 연도, 월이 유효하지 않습니다.');
-    }
-}
-
-        monthSelect.addEventListener('change', handleSelectionChange);
-        studentSelect.addEventListener('change', handleSelectionChange);
-
-        // 초기화
-        monthSelect.value = new Date().toISOString().slice(0, 7);
         loadStudents();
     </script>
+
 </body>
+
 </html>
