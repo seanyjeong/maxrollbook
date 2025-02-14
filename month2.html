@@ -98,7 +98,9 @@
         <input type="month" id="monthPicker">
     </label>
 
-    <div class="calendar-container">
+    <div class="calendar-container" id="pdfContent">
+        <div id="pdfHeader"></div>
+
         <div class="calendar" id="calendar">
             <div class="weekday">일</div>
             <div class="weekday">월</div>
@@ -108,12 +110,17 @@
             <div class="weekday">금</div>
             <div class="weekday">토</div>
         </div>
+
+        <div class="summary" id="summary">
+            <p>총 출석해야 할 일수: 0일</p>
+            <p>출석: 0일, 지각: 0일, 결석: 0일</p>
+        </div>
     </div>
 
-    <div class="summary" id="summary">
-        <p>총 출석해야 할 일수: 0일</p>
-        <p>출석: 0일, 지각: 0일, 결석: 0일</p>
-    </div>
+    <button id="savePdfBtn">PDF로 저장</button>
+
+    <!-- html2pdf 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
         const API_BASE = "https://supermax.kr";
@@ -121,22 +128,22 @@
         const monthPicker = document.getElementById("monthPicker");
         const studentSelect = document.getElementById("studentSelect");
         const summary = document.getElementById("summary");
+        const pdfHeader = document.getElementById("pdfHeader");
 
         // 현재 월 설정
         const today = new Date();
         monthPicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
         // 학생 목록 불러오기
-async function loadStudents() {
-    const res = await fetch(`${API_BASE}/adminstudents`);
-    const students = await res.json();
+        async function loadStudents() {
+            const res = await fetch(`${API_BASE}/adminstudents`);
+            const students = await res.json();
 
-    // 이름 가나다순 정렬
-    students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
+            // 이름 가나다순 정렬
+            students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
 
-    studentSelect.innerHTML = `<option value="">학생을 선택하세요</option>` + students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
-}
-
+            studentSelect.innerHTML = `<option value="">학생을 선택하세요</option>` + students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
+        }
 
         // 학생, 월 변경 시 출석 데이터 로드
         studentSelect.addEventListener("change", loadAttendance);
@@ -147,6 +154,7 @@ async function loadStudents() {
             if (!studentId) {
                 calendar.innerHTML = `<div class="weekday">일</div><div class="weekday">월</div><div class="weekday">화</div><div class="weekday">수</div><div class="weekday">목</div><div class="weekday">금</div><div class="weekday">토</div>`;
                 summary.innerHTML = `<p>총 출석해야 할 일수: 0일</p><p>출석: 0일, 지각: 0일, 결석: 0일</p>`;
+                pdfHeader.innerHTML = '';
                 return;
             }
 
@@ -158,12 +166,13 @@ async function loadStudents() {
 
                 renderCalendar(year, month, attendanceData);
                 updateMonthlySummary(attendanceData);
+                const studentName = studentSelect.options[studentSelect.selectedIndex].text;
+                pdfHeader.innerHTML = `<h3>${studentName} (${year}년 ${month}월 출결현황)</h3>`;
             } catch (error) {
                 console.error(`❌ 데이터 로드 실패 (${studentId}):`, error);
             }
         }
 
-        // 달력 렌더링
         function renderCalendar(year, month, attendanceData) {
             calendar.innerHTML = `
                 <div class="weekday">일</div>
@@ -182,78 +191,42 @@ async function loadStudents() {
                 calendar.innerHTML += `<div></div>`;
             }
 
-for (let date = 1; date <= lastDate; date++) {
-    const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            for (let date = 1; date <= lastDate; date++) {
+                const dayCell = document.createElement('div');
+                dayCell.classList.add('day');
+                dayCell.textContent = date;
 
-    const attendanceRecord = attendanceData.find(d => {
-        const recordDateUTC = new Date(d.출석일);
-        const recordDateKST = new Date(recordDateUTC.getTime() + (9 * 60 * 60 * 1000)); // KST 변환
-        const recordDateStr = recordDateKST.toISOString().split('T')[0];
+                const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+                const record = attendanceData.find(d => d.출석일.startsWith(fullDate));
 
-        console.log(`🔍 비교 중 - 캘린더: ${fullDate}, 기록(KST 변환): ${recordDateStr}`);
-        return recordDateStr === fullDate;
-    });
+                if (record) {
+                    dayCell.dataset.status = record.출석상태;
+                    if (record.사유) {
+                        const tooltip = document.createElement('div');
+                        tooltip.classList.add('tooltip');
+                        tooltip.textContent = `사유: ${record.사유}`;
+                        dayCell.appendChild(tooltip);
+                    }
+                }
 
-    const dayCell = document.createElement('div');
-    dayCell.classList.add('day');
-    dayCell.textContent = date;
-
-    if (attendanceRecord) {
-        console.log(`✅ 기록 있음 - 날짜: ${fullDate}, 상태: ${attendanceRecord.출석상태}, 사유: ${attendanceRecord.사유}`);
-        dayCell.dataset.status = attendanceRecord.출석상태;
-        if (attendanceRecord.사유) {
-            const tooltip = document.createElement('div');
-            tooltip.classList.add('tooltip');
-            tooltip.textContent = `사유: ${attendanceRecord.사유}`;
-            dayCell.appendChild(tooltip);
-        }
-    } else {
-        console.log(`❌ 기록 없음 - 날짜: ${fullDate}`);
-    }
-
-    calendar.appendChild(dayCell);
-}
-
-
+                calendar.appendChild(dayCell);
+            }
         }
 
         function updateMonthlySummary(attendanceData) {
-            const 출석일수 = attendanceData.filter(d => d.출석상태 === '출석').length;
-            const 지각일수 = attendanceData.filter(d => d.출석상태 === '지각').length;
-            const 결석일수 = attendanceData.filter(d => d.출석상태 === '결석').length;
+            const 출석 = attendanceData.filter(d => d.출석상태 === '출석').length;
+            const 지각 = attendanceData.filter(d => d.출석상태 === '지각').length;
+            const 결석 = attendanceData.filter(d => d.출석상태 === '결석').length;
 
-            summary.innerHTML = `
-                <p>총 출석해야 할 일수: ${attendanceData.length}일</p>
-                <p>출석: ${출석일수}일, 지각: ${지각일수}일, 결석: ${결석일수}일</p>
-            `;
+            summary.innerHTML = `출석: ${출석}일, 지각: ${지각}일, 결석: ${결석}일`;
         }
 
-        loadStudents();
-
-        <button id="savePdfBtn">PDF로 저장</button>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>
-    document.getElementById("savePdfBtn").addEventListener("click", () => {
-        const studentName = studentSelect.options[studentSelect.selectedIndex].text;
-        const month = monthPicker.value;
-
-        const element = document.createElement('div');
-        element.innerHTML = `
-            <h3>${studentName} (${month} 출결현황)</h3>
-            <div>${calendar.outerHTML}</div>
-            <div>${summary.outerHTML}</div>
-        `;
-
-        html2pdf(element, {
-            margin: 10,
-            filename: `${studentName}_${month}_출결현황.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        document.getElementById("savePdfBtn").addEventListener("click", () => {
+            html2pdf(document.getElementById('pdfContent'));
         });
-    });
-    </script>
 
+        loadStudents();
+    </script>
 </body>
 
 </html>
