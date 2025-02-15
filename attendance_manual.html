@@ -21,6 +21,7 @@
 
         .status-buttons button {
             margin: 3px;
+            cursor: pointer;
         }
 
         .reason-input {
@@ -39,7 +40,6 @@
 <body>
     <h1>특정 날짜 출석 입력</h1>
 
-    <!-- 날짜 선택 -->
     <label for="datePicker">출석일 선택:</label>
     <input type="date" id="datePicker">
 
@@ -47,25 +47,30 @@
 
     <button id="submitAttendance" style="margin-top: 15px;">출석 기록 저장</button>
 
-    <p id="resultMessage" style="color: green; margin-top: 10px;"></p>
-
     <script>
         const API_BASE = "https://supermax.kr";
+
+        let allStudents = [];
 
         async function loadStudents() {
             const res = await fetch(`${API_BASE}/adminstudents`);
             const students = await res.json();
             students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
-
-            renderStudentList(students);
+            allStudents = students;
         }
 
-        // 학생 목록 렌더링 함수
-        function renderStudentList(students) {
+        async function loadAttendanceRecords(date) {
+            const res = await fetch(`${API_BASE}/attendanceday?date=${date}`);
+            const records = await res.json();
+            return records;
+        }
+
+        function renderStudentList(students, attendanceRecords) {
             const studentListDiv = document.getElementById("studentList");
-            studentListDiv.innerHTML = ""; // 초기화
+            studentListDiv.innerHTML = "";
 
             students.forEach(student => {
+                const record = attendanceRecords.find(r => r.id == student.id);
                 const card = document.createElement("div");
                 card.classList.add("student-card");
                 card.dataset.id = student.id;
@@ -76,10 +81,17 @@
                 const statusButtonsDiv = document.createElement("div");
                 statusButtonsDiv.classList.add("status-buttons");
 
+                let reasonValue = "";
+
                 ["출석", "지각", "결석"].forEach(status => {
                     const button = document.createElement("button");
                     button.textContent = status;
                     button.dataset.status = status;
+
+                    if (record && record.출석상태 === status) {
+                        button.classList.add("selected");
+                        if (record.사유) reasonValue = record.사유;
+                    }
 
                     button.addEventListener("click", () => {
                         statusButtonsDiv.querySelectorAll("button").forEach(btn => btn.classList.remove("selected"));
@@ -95,7 +107,11 @@
                 reasonInput.classList.add("reason-input");
                 reasonInput.type = "text";
                 reasonInput.placeholder = "지각/결석 사유 입력 (선택)";
-                reasonInput.style.display = "none";
+                reasonInput.value = reasonValue;
+
+                if (record && (record.출석상태 === "지각" || record.출석상태 === "결석")) {
+                    reasonInput.style.display = "block";
+                }
 
                 card.appendChild(nameText);
                 card.appendChild(statusButtonsDiv);
@@ -103,6 +119,17 @@
 
                 studentListDiv.appendChild(card);
             });
+        }
+
+        async function loadAndRender() {
+            const date = document.getElementById("datePicker").value;
+            if (!date) {
+                alert("날짜를 선택해주세요.");
+                return;
+            }
+
+            const attendanceRecords = await loadAttendanceRecords(date);
+            renderStudentList(allStudents, attendanceRecords);
         }
 
         async function submitAttendance() {
@@ -116,7 +143,7 @@
             document.querySelectorAll(".student-card").forEach(card => {
                 const studentId = card.dataset.id;
                 const selectedButton = card.querySelector(".status-buttons .selected");
-                if (!selectedButton) return; // 상태 선택 안 했으면 건너뜀
+                if (!selectedButton) return;
 
                 const status = selectedButton.dataset.status;
                 const reasonInput = card.querySelector(".reason-input");
@@ -144,7 +171,7 @@
 
                 if (res.ok) {
                     alert("출석 기록이 성공적으로 저장되었습니다!");
-                    resetSelections(); // ✅ 저장 후 상태 초기화
+                    await loadAndRender(); // ✅ 저장 후 다시 불러와서 갱신
                 } else {
                     alert("출석 기록 저장 실패!");
                 }
@@ -154,19 +181,7 @@
             }
         }
 
-        // ✅ 날짜 변경될 때, 상태 초기화 + 다시 로드
-        function resetSelections() {
-            document.querySelectorAll(".student-card").forEach(card => {
-                card.querySelectorAll(".status-buttons button").forEach(btn => btn.classList.remove("selected"));
-                const reasonInput = card.querySelector(".reason-input");
-                reasonInput.value = "";
-                reasonInput.style.display = "none";
-            });
-        }
-
-        // 날짜 변경 시 입력 초기화 처리 (이벤트 연결)
-        document.getElementById("datePicker").addEventListener("change", resetSelections);
-
+        document.getElementById("datePicker").addEventListener("change", loadAndRender);
         document.getElementById("submitAttendance").addEventListener("click", submitAttendance);
 
         loadStudents();
