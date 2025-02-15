@@ -57,6 +57,11 @@
             const students = await res.json();
             students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
 
+            renderStudentList(students);
+        }
+
+        // 학생 목록 렌더링 함수
+        function renderStudentList(students) {
             const studentListDiv = document.getElementById("studentList");
             studentListDiv.innerHTML = ""; // 초기화
 
@@ -79,6 +84,7 @@
                     button.addEventListener("click", () => {
                         statusButtonsDiv.querySelectorAll("button").forEach(btn => btn.classList.remove("selected"));
                         button.classList.add("selected");
+
                         reasonInput.style.display = (status === "지각" || status === "결석") ? "block" : "none";
                     });
 
@@ -138,6 +144,7 @@
 
                 if (res.ok) {
                     alert("출석 기록이 성공적으로 저장되었습니다!");
+                    resetSelections(); // ✅ 저장 후 상태 초기화
                 } else {
                     alert("출석 기록 저장 실패!");
                 }
@@ -146,6 +153,19 @@
                 alert("출석 기록 저장 중 오류 발생");
             }
         }
+
+        // ✅ 날짜 변경될 때, 상태 초기화 + 다시 로드
+        function resetSelections() {
+            document.querySelectorAll(".student-card").forEach(card => {
+                card.querySelectorAll(".status-buttons button").forEach(btn => btn.classList.remove("selected"));
+                const reasonInput = card.querySelector(".reason-input");
+                reasonInput.value = "";
+                reasonInput.style.display = "none";
+            });
+        }
+
+        // 날짜 변경 시 입력 초기화 처리 (이벤트 연결)
+        document.getElementById("datePicker").addEventListener("change", resetSelections);
 
         document.getElementById("submitAttendance").addEventListener("click", submitAttendance);
 
