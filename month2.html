@@ -172,29 +172,41 @@
             studentSelect.innerHTML = `<option value="">학생을 선택하세요</option>` + students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
         }
 
-        studentSelect.addEventListener("change", loadAttendance);
-        monthPicker.addEventListener("change", loadAttendance);
+studentSelect.addEventListener("change", () => {
+    loadAttendance();
+    updatePdfHeader(); // 학생 선택 시 바로 반영
+});
 
-        async function loadAttendance() {
-            const studentId = studentSelect.value;
-            if (!studentId) return;
+monthPicker.addEventListener("change", () => {
+    loadAttendance();
+    updatePdfHeader(); // 월 변경 시 바로 반영
+});
 
-            const [year, month] = monthPicker.value.split("-");
 
-            const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
-            const attendanceData = await res.json();
+async function loadAttendance() {
+    const studentId = studentSelect.value;
+    if (!studentId) return;
 
-            renderCalendar(year, month, attendanceData);
-            await updateSummary(attendanceData, year, month, studentId);
-            updateDetails(attendanceData);
+    const [year, month] = monthPicker.value.split("-");
 
-            updatePdfHeader(studentId, year, month);
-        }
+    const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
+    const attendanceData = await res.json();
 
-        function updatePdfHeader(studentId, year, month) {
-            const studentName = studentSelect.options[studentSelect.selectedIndex].text.split(' ')[0];
-            pdfHeader.innerHTML = `<h3>${studentName} (${year}년 ${month}월)</h3>`;
-        }
+    renderCalendar(year, month, attendanceData);
+    await updateSummary(attendanceData, year, month, studentId);
+    updateDetails(attendanceData);
+        // 학생 이름 / 월 반영
+    updatePdfHeader();
+
+
+}
+
+function updatePdfHeader() {
+    const studentName = studentSelect.options[studentSelect.selectedIndex].text.split(' ')[0];
+    const [year, month] = monthPicker.value.split('-');
+    pdfHeader.innerHTML = `<h3>${studentName} (${year}년 ${month}월)</h3>`;
+}
+
 
         function renderCalendar(year, month, data) {
             calendar.innerHTML = Array.from({ length: 7 }, (_, i) => `<div class="weekday">${'일월화수목금토'[i]}</div>`).join('');
