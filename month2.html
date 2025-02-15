@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>맥스 일산교육원 출석</title>
+    <title>맥스 일산교육원 학생별 출결현황</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
         body {
@@ -185,7 +185,7 @@
             const attendanceData = await res.json();
 
             renderCalendar(year, month, attendanceData);
-            updateSummary(attendanceData);
+            await updateSummary(attendanceData, year, month, studentId);
             updateDetails(attendanceData);
 
             const studentName = studentSelect.options[studentSelect.selectedIndex].text.split(' ')[0];
@@ -208,40 +208,39 @@
             }
         }
 
-        function updateSummary(data) {
+        async function updateSummary(data, year, month, studentId) {
             const 출석 = data.filter(d => d.출석상태 === '출석').length;
             const 지각 = data.filter(d => d.출석상태 === '지각').length;
             const 결석 = data.filter(d => d.출석상태 === '결석').length;
 
-            summary.innerHTML = `출석: ${출석}일, 지각: ${지각}일, 결석: ${결석}일`;
-        }
+            const studentRes = await fetch(`${API_BASE}/adminstudents`);
+            const students = await studentRes.json();
+            const student = students.find(s => s.id == studentId);
 
-        function updateDetails(data) {
-            const detailsHtml = data.filter(d => d.출석상태 === '지각' || d.출석상태 === '결석')
-                .map(d => `${d.출석일} (${['일', '월', '화', '수', '목', '금', '토'][new Date(d.출석일).getDay()]}) - ${d.사유 || '사유 없음'}`)
-                .join('<br>');
+            const 출석요일 = [student.출석_일, student.출석_월, student.출석_화, student.출석_수, student.출석_목, student.출석_금, student.출석_토];
+            const lastDate = new Date(year, month, 0).getDate();
+            const 출석해야할일수 = Array.from({ length: lastDate }, (_, i) => new Date(year, month - 1, i + 1).getDay())
+                .filter(day => 출석요일[day]).length;
 
-            details.innerHTML = detailsHtml ? `<h4>지각/결석 상세 내역</h4>${detailsHtml}` : '';
+            summary.innerHTML = `<p>총 출석해야 할 일수: ${출석해야할일수}일</p><p>출석: ${출석}일, 지각: ${지각}일, 결석: ${결석}일</p>`;
         }
 
 document.getElementById("savePdfBtn").addEventListener("click", () => {
     const studentName = studentSelect.options[studentSelect.selectedIndex].text.split(' ')[0];
     const month = monthPicker.value;
 
-    html2pdf(document.getElementById('pdfContent'), {
+    html2pdf().from(document.getElementById('pdfContent')).set({
         margin: 10,
         filename: `${studentName}_${month}_출결현황.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    });
+    }).save();
 });
 
 
         loadStudents();
     </script>
-
-
 </body>
 
 </html>
