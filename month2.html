@@ -12,7 +12,7 @@
         }
 
         .calendar-container {
-            max-width: 600px;
+            max-width: 550px;
             margin: auto;
         }
 
@@ -188,6 +188,10 @@
             await updateSummary(attendanceData, year, month, studentId);
             updateDetails(attendanceData);
 
+            updatePdfHeader(studentId, year, month);
+        }
+
+        function updatePdfHeader(studentId, year, month) {
             const studentName = studentSelect.options[studentSelect.selectedIndex].text.split(' ')[0];
             pdfHeader.innerHTML = `<h3>${studentName} (${year}년 ${month}월)</h3>`;
         }
@@ -213,16 +217,7 @@
             const 지각 = data.filter(d => d.출석상태 === '지각').length;
             const 결석 = data.filter(d => d.출석상태 === '결석').length;
 
-            const studentRes = await fetch(`${API_BASE}/adminstudents`);
-            const students = await studentRes.json();
-            const student = students.find(s => s.id == studentId);
-
-            const 출석요일 = [student.출석_일, student.출석_월, student.출석_화, student.출석_수, student.출석_목, student.출석_금, student.출석_토];
-            const lastDate = new Date(year, month, 0).getDate();
-            const 출석해야할일수 = Array.from({ length: lastDate }, (_, i) => new Date(year, month - 1, i + 1).getDay())
-                .filter(day => 출석요일[day]).length;
-
-            summary.innerHTML = `<p>총 출석해야 할 일수: ${출석해야할일수}일</p><p>출석: ${출석}일, 지각: ${지각}일, 결석: ${결석}일</p>`;
+            summary.innerHTML = `<p>출석: ${출석}일, 지각: ${지각}일, 결석: ${결석}일</p>`;
         }
 
 document.getElementById("savePdfBtn").addEventListener("click", () => {
