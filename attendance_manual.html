@@ -102,45 +102,40 @@
             });
         });
 
-        document.getElementById("submitAttendance").addEventListener("click", async () => {
-            const date = document.getElementById("datePicker").value;
-            const studentId = document.getElementById("studentSelect").value;
-            const reason = document.getElementById("reasonInput").value;
+document.getElementById("submitAttendance").addEventListener("click", async () => {
+    const date = document.getElementById("datePicker").value;
+    const studentId = document.getElementById("studentSelect").value;
+    const reason = document.getElementById("reasonInput").value;
 
-            if (!date || !studentId || !selectedStatus) {
-                alert("날짜, 학생, 상태를 모두 선택해주세요.");
-                return;
-            }
+    if (!date || !studentId || !selectedStatus) {
+        alert("날짜, 학생, 상태를 모두 선택해주세요.");
+        return;
+    }
 
-            const payload = {
-                출석일: date,
-                studentId,
-                출석상태: selectedStatus,
-                사유: reason
-            };
+    const payload = [{
+        출석일: date,
+        studentId,
+        출석상태: selectedStatus,
+        사유: reason
+    }];
 
-            try {
-                const res = await fetch(`${API_BASE}/attendanceinsert`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload),
-                });
-
-                if (res.ok) {
-                    document.getElementById("resultMessage").textContent = "출석 기록이 성공적으로 저장되었습니다!";
-                    document.getElementById("resultMessage").style.color = "green";
-                } else {
-                    document.getElementById("resultMessage").textContent = "출석 기록 저장에 실패했습니다.";
-                    document.getElementById("resultMessage").style.color = "red";
-                }
-            } catch (error) {
-                console.error("출석 기록 저장 중 오류 발생:", error);
-                document.getElementById("resultMessage").textContent = "서버 오류가 발생했습니다.";
-                document.getElementById("resultMessage").style.color = "red";
-            }
+    try {
+        const res = await fetch(`${API_BASE}/attendancerecord`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
         });
+
+        if (res.ok) {
+            alert("출석 기록이 성공적으로 저장되었습니다!");
+        } else {
+            alert("출석 기록 저장 실패!");
+        }
+    } catch (error) {
+        console.error("출석 기록 저장 중 오류 발생:", error);
+    }
+});
+
 
         loadStudents();
     </script>
