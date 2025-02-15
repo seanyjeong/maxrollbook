@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>과거 출석 입력</title>
+    <title>특정 날짜 출석 입력</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
         body {
@@ -27,31 +27,23 @@
             margin-top: 5px;
             display: none;
         }
+
+        .status-buttons button.selected {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
-    <h1>과거 출석 입력</h1>
+    <h1>특정 날짜 출석 입력</h1>
 
     <!-- 날짜 선택 -->
     <label for="datePicker">출석일 선택:</label>
     <input type="date" id="datePicker">
 
-    <!-- 학생 선택 -->
-    <label for="studentSelect">학생 선택:</label>
-    <select id="studentSelect">
-        <option value="">학생을 선택하세요</option>
-    </select>
-
-    <div id="studentStatus" class="student-card" style="display: none;">
-        <p id="studentNameDisplay"></p>
-        <div class="status-buttons">
-            <button data-status="출석">출석</button>
-            <button data-status="지각">지각</button>
-            <button data-status="결석">결석</button>
-        </div>
-        <input type="text" id="reasonInput" class="reason-input" placeholder="지각/결석 사유 입력 (선택)">
-    </div>
+    <div id="studentList"></div>
 
     <button id="submitAttendance" style="margin-top: 15px;">출석 기록 저장</button>
 
@@ -59,83 +51,103 @@
 
     <script>
         const API_BASE = "https://supermax.kr";
-        let selectedStatus = null;
 
         async function loadStudents() {
             const res = await fetch(`${API_BASE}/adminstudents`);
             const students = await res.json();
             students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
 
-            const select = document.getElementById("studentSelect");
+            const studentListDiv = document.getElementById("studentList");
+            studentListDiv.innerHTML = ""; // 초기화
+
             students.forEach(student => {
-                const option = document.createElement("option");
-                option.value = student.id;
-                option.textContent = `${student.이름} (${student.학교}, ${student.학년}학년)`;
-                select.appendChild(option);
+                const card = document.createElement("div");
+                card.classList.add("student-card");
+                card.dataset.id = student.id;
+
+                const nameText = document.createElement("p");
+                nameText.textContent = `${student.이름} (${student.학교}, ${student.학년}학년)`;
+
+                const statusButtonsDiv = document.createElement("div");
+                statusButtonsDiv.classList.add("status-buttons");
+
+                ["출석", "지각", "결석"].forEach(status => {
+                    const button = document.createElement("button");
+                    button.textContent = status;
+                    button.dataset.status = status;
+
+                    button.addEventListener("click", () => {
+                        statusButtonsDiv.querySelectorAll("button").forEach(btn => btn.classList.remove("selected"));
+                        button.classList.add("selected");
+                        reasonInput.style.display = (status === "지각" || status === "결석") ? "block" : "none";
+                    });
+
+                    statusButtonsDiv.appendChild(button);
+                });
+
+                const reasonInput = document.createElement("input");
+                reasonInput.classList.add("reason-input");
+                reasonInput.type = "text";
+                reasonInput.placeholder = "지각/결석 사유 입력 (선택)";
+                reasonInput.style.display = "none";
+
+                card.appendChild(nameText);
+                card.appendChild(statusButtonsDiv);
+                card.appendChild(reasonInput);
+
+                studentListDiv.appendChild(card);
             });
         }
 
-        document.getElementById("studentSelect").addEventListener("change", () => {
-            const selectedId = document.getElementById("studentSelect").value;
-            if (!selectedId) {
-                document.getElementById("studentStatus").style.display = "none";
+        async function submitAttendance() {
+            const date = document.getElementById("datePicker").value;
+            if (!date) {
+                alert("날짜를 선택해주세요.");
                 return;
             }
-            const selectedText = document.getElementById("studentSelect").selectedOptions[0].text;
-            document.getElementById("studentNameDisplay").textContent = `${selectedText}`;
-            document.getElementById("studentStatus").style.display = "block";
-        });
 
-        document.querySelectorAll(".status-buttons button").forEach(button => {
-            button.addEventListener("click", () => {
-                selectedStatus = button.dataset.status;
-                document.querySelectorAll(".status-buttons button").forEach(btn => btn.classList.remove("selected"));
-                button.classList.add("selected");
+            const records = [];
+            document.querySelectorAll(".student-card").forEach(card => {
+                const studentId = card.dataset.id;
+                const selectedButton = card.querySelector(".status-buttons .selected");
+                if (!selectedButton) return; // 상태 선택 안 했으면 건너뜀
 
-                const reasonInput = document.getElementById("reasonInput");
-                if (selectedStatus === "지각" || selectedStatus === "결석") {
-                    reasonInput.style.display = "block";
-                } else {
-                    reasonInput.style.display = "none";
-                    reasonInput.value = "";
-                }
+                const status = selectedButton.dataset.status;
+                const reasonInput = card.querySelector(".reason-input");
+                const reason = reasonInput ? reasonInput.value.trim() : null;
+
+                records.push({
+                    학생_id: studentId,
+                    출석일: date,
+                    출석상태: status,
+                    사유: reason || null
+                });
             });
-        });
 
-document.getElementById("submitAttendance").addEventListener("click", async () => {
-    const date = document.getElementById("datePicker").value;
-    const studentId = document.getElementById("studentSelect").value;
-    const reason = document.getElementById("reasonInput").value;
+            if (records.length === 0) {
+                alert("한 명 이상의 학생 상태를 선택해주세요.");
+                return;
+            }
 
-    if (!date || !studentId || !selectedStatus) {
-        alert("날짜, 학생, 상태를 모두 선택해주세요.");
-        return;
-    }
+            try {
+                const res = await fetch(`${API_BASE}/attendancerecord`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(records)
+                });
 
-    const payload = [{
-        출석일: date,
-        studentId,
-        출석상태: selectedStatus,
-        사유: reason
-    }];
-
-    try {
-        const res = await fetch(`${API_BASE}/attendancerecord`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-            alert("출석 기록이 성공적으로 저장되었습니다!");
-        } else {
-            alert("출석 기록 저장 실패!");
+                if (res.ok) {
+                    alert("출석 기록이 성공적으로 저장되었습니다!");
+                } else {
+                    alert("출석 기록 저장 실패!");
+                }
+            } catch (error) {
+                console.error("출석 기록 저장 중 오류 발생:", error);
+                alert("출석 기록 저장 중 오류 발생");
+            }
         }
-    } catch (error) {
-        console.error("출석 기록 저장 중 오류 발생:", error);
-    }
-});
 
+        document.getElementById("submitAttendance").addEventListener("click", submitAttendance);
 
         loadStudents();
     </script>
