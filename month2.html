@@ -171,6 +171,24 @@
 
             studentSelect.innerHTML = `<option value="">학생을 선택하세요</option>` + students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
         }
+        function updateDetails(data) {
+    const detailsList = data
+        .filter(d => d.출석상태 === '지각' || d.출석상태 === '결석')
+        .map(d => {
+            const 출석일 = new Date(d.출석일);
+            const 요일 = '일월화수목금토'[출석일.getDay()];
+            const 사유 = d.사유 || '사유 없음'; // 사유 없으면 '사유 없음'으로 표시
+
+            return `<li>${출석일.toLocaleDateString('ko-KR')} (${요일}) - ${d.출석상태} : ${사유}</li>`;
+        });
+
+    if (detailsList.length > 0) {
+        details.innerHTML = `<h4>지각 / 결석 상세 내역</h4><ul>${detailsList.join('')}</ul>`;
+    } else {
+        details.innerHTML = `<p>지각 및 결석 내역이 없습니다.</p>`;
+    }
+}
+
 
 studentSelect.addEventListener("change", () => {
     loadAttendance();
