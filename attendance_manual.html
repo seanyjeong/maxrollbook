@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>과거 출석 입력</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <style>
+        body {
+            text-align: center;
+        }
+
+        .student-card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .status-buttons button {
+            margin: 3px;
+        }
+
+        .reason-input {
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>과거 출석 입력</h1>
+
+    <!-- 날짜 선택 -->
+    <label for="datePicker">출석일 선택:</label>
+    <input type="date" id="datePicker">
+
+    <!-- 학생 선택 -->
+    <label for="studentSelect">학생 선택:</label>
+    <select id="studentSelect">
+        <option value="">학생을 선택하세요</option>
+    </select>
+
+    <div id="studentStatus" class="student-card" style="display: none;">
+        <p id="studentNameDisplay"></p>
+        <div class="status-buttons">
+            <button data-status="출석">출석</button>
+            <button data-status="지각">지각</button>
+            <button data-status="결석">결석</button>
+        </div>
+        <input type="text" id="reasonInput" class="reason-input" placeholder="지각/결석 사유 입력 (선택)">
+    </div>
+
+    <button id="submitAttendance" style="margin-top: 15px;">출석 기록 저장</button>
+
+    <p id="resultMessage" style="color: green; margin-top: 10px;"></p>
+
+    <script>
+        const API_BASE = "https://supermax.kr";
+        let selectedStatus = null;
+
+        async function loadStudents() {
+            const res = await fetch(`${API_BASE}/adminstudents`);
+            const students = await res.json();
+            students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
+
+            const select = document.getElementById("studentSelect");
+            students.forEach(student => {
+                const option = document.createElement("option");
+                option.value = student.id;
+                option.textContent = `${student.이름} (${student.학교}, ${student.학년}학년)`;
+                select.appendChild(option);
+            });
+        }
+
+        document.getElementById("studentSelect").addEventListener("change", () => {
+            const selectedId = document.getElementById("studentSelect").value;
+            if (!selectedId) {
+                document.getElementById("studentStatus").style.display = "none";
+                return;
+            }
+            const selectedText = document.getElementById("studentSelect").selectedOptions[0].text;
+            document.getElementById("studentNameDisplay").textContent = `${selectedText}`;
+            document.getElementById("studentStatus").style.display = "block";
+        });
+
+        document.querySelectorAll(".status-buttons button").forEach(button => {
+            button.addEventListener("click", () => {
+                selectedStatus = button.dataset.status;
+                document.querySelectorAll(".status-buttons button").forEach(btn => btn.classList.remove("selected"));
+                button.classList.add("selected");
+
+                const reasonInput = document.getElementById("reasonInput");
+                if (selectedStatus === "지각" || selectedStatus === "결석") {
+                    reasonInput.style.display = "block";
+                } else {
+                    reasonInput.style.display = "none";
+                    reasonInput.value = "";
+                }
+            });
+        });
+
+        document.getElementById("submitAttendance").addEventListener("click", async () => {
+            const date = document.getElementById("datePicker").value;
+            const studentId = document.getElementById("studentSelect").value;
+            const reason = document.getElementById("reasonInput").value;
+
+            if (!date || !studentId || !selectedStatus) {
+                alert("날짜, 학생, 상태를 모두 선택해주세요.");
+                return;
+            }
+
+            const payload = {
+                출석일: date,
+                studentId,
+                출석상태: selectedStatus,
+                사유: reason
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/attendanceinsert`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (res.ok) {
+                    document.getElementById("resultMessage").textContent = "출석 기록이 성공적으로 저장되었습니다!";
+                    document.getElementById("resultMessage").style.color = "green";
+                } else {
+                    document.getElementById("resultMessage").textContent = "출석 기록 저장에 실패했습니다.";
+                    document.getElementById("resultMessage").style.color = "red";
+                }
+            } catch (error) {
+                console.error("출석 기록 저장 중 오류 발생:", error);
+                document.getElementById("resultMessage").textContent = "서버 오류가 발생했습니다.";
+                document.getElementById("resultMessage").style.color = "red";
+            }
+        });
+
+        loadStudents();
+    </script>
+</body>
+
+</html>
