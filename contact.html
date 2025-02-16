@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학생 연락처</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <style>
+        body {
+            text-align: center;
+        }
+
+        .student-card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            text-align: left;
+        }
+
+        .button-group button {
+            margin: 3px;
+            padding: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>맥스체대입시 일산교육원 학생 연락처</h1>
+    <div id="studentList">로딩 중...</div>
+
+    <script>
+        const API_BASE = "https://supermax.kr";
+
+        async function loadStudents() {
+            const res = await fetch(`${API_BASE}/adminstudents`);
+            const students = await res.json();
+            students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
+
+            const listContainer = document.getElementById("studentList");
+            listContainer.innerHTML = '';
+
+            students.forEach(student => {
+                const card = document.createElement("div");
+                card.className = "student-card";
+
+                card.innerHTML = `
+                    <strong>${student.이름}</strong> (${student.학교}, ${student.학년}학년)<br>
+                    연락처: ${student.연락처}<br>
+                    <div class="button-group">
+                        <button onclick="makeCall('${student.연락처}')">📞 전화</button>
+                        <button onclick="sendSMS('${student.연락처}')">✉️ 문자</button>
+                    </div>
+                `;
+
+                listContainer.appendChild(card);
+            });
+        }
+
+        function makeCall(phoneNumber) {
+            window.location.href = `tel:${phoneNumber.replace(/-/g, '')}`;
+        }
+
+        function sendSMS(phoneNumber) {
+            window.location.href = `sms:${phoneNumber.replace(/-/g, '')}`;
+        }
+
+        loadStudents();
+    </script>
+</body>
+
+</html>
