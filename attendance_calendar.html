@@ -5,13 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>출근 현황 (달력)</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <style>
+        body { text-align: center; }
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
+        .day { padding: 10px; border: 1px solid #ccc; border-radius: 5px; min-height: 50px; }
+        .day.work { background-color: #4CAF50; color: white; }
+        .day.late { background-color: #FFC107; color: black; }
+        .day.off { background-color: #F44336; color: white; }
+        .summary { margin-top: 15px; font-size: 18px; }
+    </style>
 </head>
 <body>
     <h1>출근 현황 (달력)</h1>
     <label>강사 선택: <select id="teacherSelect"></select></label>
     <label>월 선택: <input type="month" id="monthInput"></label>
     <button onclick="fetchAttendance()">조회</button>
-    <div id="attendanceResult">결과가 여기에 표시됩니다.</div>
+    <div id="calendar" class="calendar"></div>
+    <div id="summary" class="summary"></div>
 
     <script>
         async function loadTeachers() {
@@ -40,8 +50,40 @@
 
             const filtered = records.filter(r => r.출근일.startsWith(`${year}-${monthNumber}`));
 
-            const resultDiv = document.getElementById('attendanceResult');
-            resultDiv.innerHTML = filtered.map(r => `${r.출근일} - 출근여부: ${r.월요일 ? '월 ' : ''}${r.화요일 ? '화 ' : ''}${r.수요일 ? '수 ' : ''}${r.목요일 ? '목 ' : ''}${r.금요일 ? '금 ' : ''}${r.토요일 ? '토 ' : ''}${r.일요일 ? '일 ' : ''}`).join('<br>');
+            const firstDay = new Date(year, monthNumber - 1, 1).getDay();
+            const lastDate = new Date(year, monthNumber, 0).getDate();
+
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+
+            for (let i = 0; i < firstDay; i++) {
+                calendar.innerHTML += '<div class="day"></div>';
+            }
+
+            let workDays = 0;
+
+            for (let day = 1; day <= lastDate; day++) {
+                const dateString = `${year}-${monthNumber}-${String(day).padStart(2, '0')}`;
+                const record = filtered.find(r => r.출근일 === dateString);
+                let className = 'day';
+                let displayText = day;
+
+                if (record) {
+                    if (record.출근) {
+                        className += ' work';
+                        workDays++;
+                    } else if (record.지각) {
+                        className += ' late';
+                        workDays++;
+                    } else if (record.휴무) {
+                        className += ' off';
+                    }
+                }
+
+                calendar.innerHTML += `<div class="${className}">${displayText}</div>`;
+            }
+
+            document.getElementById('summary').textContent = `출근일수: ${workDays}일`;
         }
 
         loadTeachers();
