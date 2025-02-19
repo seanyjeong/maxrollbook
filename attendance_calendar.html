@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출근 현황 (달력)</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+</head>
+<body>
+    <h1>출근 현황 (달력)</h1>
+    <label>강사 선택: <select id="teacherSelect"></select></label>
+    <label>월 선택: <input type="month" id="monthInput"></label>
+    <button onclick="fetchAttendance()">조회</button>
+    <div id="attendanceResult">결과가 여기에 표시됩니다.</div>
+
+    <script>
+        async function loadTeachers() {
+            const response = await fetch('https://supermax.kr/teachers');
+            const teachers = await response.json();
+            const select = document.getElementById('teacherSelect');
+
+            teachers.forEach(t => {
+                const option = document.createElement('option');
+                option.value = t.id;
+                option.textContent = t.이름;
+                select.appendChild(option);
+            });
+        }
+
+        async function fetchAttendance() {
+            const teacherId = document.getElementById('teacherSelect').value;
+            const month = document.getElementById('monthInput').value;
+            if (!teacherId || !month) return alert('강사와 월을 선택하세요');
+
+            const year = month.split('-')[0];
+            const monthNumber = month.split('-')[1];
+
+            const response = await fetch(`https://supermax.kr/attendance/teacher/${teacherId}`);
+            const records = await response.json();
+
+            const filtered = records.filter(r => r.출근일.startsWith(`${year}-${monthNumber}`));
+
+            const resultDiv = document.getElementById('attendanceResult');
+            resultDiv.innerHTML = filtered.map(r => `${r.출근일} - 출근여부: ${r.월요일 ? '월 ' : ''}${r.화요일 ? '화 ' : ''}${r.수요일 ? '수 ' : ''}${r.목요일 ? '목 ' : ''}${r.금요일 ? '금 ' : ''}${r.토요일 ? '토 ' : ''}${r.일요일 ? '일 ' : ''}`).join('<br>');
+        }
+
+        loadTeachers();
+    </script>
+</body>
+</html>
