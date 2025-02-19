@@ -6,8 +6,12 @@
     <title>출근 체크</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
-        .attendance-select { margin-top: 5px; }
+        body { text-align: center; }
+        .attendance-select { display: flex; justify-content: center; margin-top: 5px; gap: 10px; }
+        .attendance-btn { padding: 10px 20px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; }
+        .attendance-btn.selected { background-color: #4CAF50; color: white; }
         .btn { margin-top: 15px; }
+        .teacher-entry { margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -35,28 +39,36 @@
             listContainer.innerHTML = '';
             teachers.forEach(teacher => {
                 const div = document.createElement('div');
+                div.classList.add('teacher-entry');
                 div.innerHTML = `
                     <p>${teacher.이름} (${teacher.직급 || '직급 없음'})</p>
-                    <select class="attendance-select" data-teacher-id="${teacher.id}">
-                        <option value="">출근 상태 선택</option>
-                        <option value="출근">출근</option>
-                        <option value="지각">지각</option>
-                        <option value="휴무">휴무</option>
-                    </select>
+                    <div class="attendance-select" data-teacher-id="${teacher.id}">
+                        <div class="attendance-btn" data-status="출근">출근</div>
+                        <div class="attendance-btn" data-status="지각">지각</div>
+                        <div class="attendance-btn" data-status="휴무">휴무</div>
+                    </div>
                 `;
                 listContainer.appendChild(div);
+
+                const buttons = div.querySelectorAll('.attendance-btn');
+                buttons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        buttons.forEach(btn => btn.classList.remove('selected'));
+                        button.classList.add('selected');
+                    });
+                });
             });
         }
 
         async function saveAttendance() {
-            const selects = document.querySelectorAll('.attendance-select');
+            const entries = document.querySelectorAll('.attendance-select');
             const attendanceData = [];
 
-            selects.forEach(select => {
-                const 상태 = select.value;
-                const 강사_id = select.getAttribute('data-teacher-id');
-
-                if (상태) {
+            entries.forEach(entry => {
+                const selectedButton = entry.querySelector('.attendance-btn.selected');
+                if (selectedButton) {
+                    const 상태 = selectedButton.getAttribute('data-status');
+                    const 강사_id = entry.getAttribute('data-teacher-id');
                     attendanceData.push({ 강사_id, 출근일: todayString, 상태 });
                 }
             });
