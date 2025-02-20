@@ -77,7 +77,7 @@
                 const dayOfWeek = dateObject.getDay();
                 const 요일칼럼 = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'][dayOfWeek];
 
-                const record = records.find(r => r.출근일 === dateString);
+                const record = records.find(r => r.출근일.startsWith(dateString));
                 let 상태숫자 = record ? record[요일칼럼] : 0;
 
                 let className = 'day';
