@@ -70,60 +70,62 @@
 
             renderCalendar(year, month, records);
         }
+function renderCalendar(year, month, records) {
+    const calendar = document.getElementById('calendar');
+    calendar.innerHTML = '';
 
-        function renderCalendar(year, month, records) {
-            const calendar = document.getElementById('calendar');
-            calendar.innerHTML = '';
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
 
-            const firstDay = new Date(year, month - 1, 1);
-            const lastDay = new Date(year, month, 0);
+    const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
-            const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+    dayNames.forEach(dayName => {
+        const dayHeader = document.createElement('div');
+        dayHeader.textContent = dayName;
+        dayHeader.style.fontWeight = 'bold';
+        dayHeader.classList.add('day-cell');
+        calendar.appendChild(dayHeader);
+    });
 
-            dayNames.forEach(dayName => {
-                const dayHeader = document.createElement('div');
-                dayHeader.textContent = dayName;
-                dayHeader.style.fontWeight = 'bold';
-                dayHeader.classList.add('day-cell');
-                calendar.appendChild(dayHeader);
-            });
+    let 출근일수 = 0;
 
-            let 출근일수 = 0;
+    // 첫 번째 날의 요일 위치 맞추기 위한 빈칸
+    for (let i = 0; i < firstDay.getDay(); i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.classList.add('day-cell');
+        calendar.appendChild(emptyCell);
+    }
 
-            for (let i = 1; i <= lastDay.getDate(); i++) {
-                const date = new Date(year, month - 1, i);
-                const 요일명 = dayNames[date.getDay()];
-                const 날짜 = date.toISOString().split('T')[0];
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+        const date = new Date(year, month - 1, i);
+        const 요일명 = dayNames[date.getDay()];
+        const 날짜 = date.toISOString().split('T')[0];
 
-                const cell = document.createElement('div');
-                cell.classList.add('day-cell');
-                cell.textContent = i;
+        const cell = document.createElement('div');
+        cell.classList.add('day-cell');
+        cell.textContent = i;
 
-                const record = records.find(r => {
-                    const 출근일 = new Date(r.출근일);
-                    const kst출근일 = new Date(출근일.getTime() + (9 * 60 * 60 * 1000));
-                    const 출근일자 = kst출근일.toISOString().split('T')[0];
-                    return 출근일자 === 날짜;
-                });
+        const record = records.find(r => {
+            return r[요일명] !== 0; // 해당 요일 출근 or 지각
+        });
 
-                if (record) {
-                    console.log(`날짜: ${날짜}, 레코드 확인:`, record);
-                    if (record[요일명] === 1) {
-                        cell.classList.add('출근');
-                        출근일수++;
-                    } else if (record[요일명] === 2) {
-                        cell.classList.add('지각');
-                        출근일수++;
-                    } else {
-                        cell.classList.add('휴무');
-                    }
-                }
-
-                calendar.appendChild(cell);
+        if (record) {
+            console.log(`날짜: ${날짜}, 레코드 확인:`, record);
+            if (record[요일명] === 1) {
+                cell.classList.add('출근');
+                출근일수++;
+            } else if (record[요일명] === 2) {
+                cell.classList.add('지각');
+                출근일수++;
             }
-
-            document.getElementById('workDaysCount').textContent = `출근일수: ${출근일수}일`;
         }
+
+        calendar.appendChild(cell);
+    }
+
+    document.getElementById('workDaysCount').textContent = `출근일수: ${출근일수}일`;
+}
+
 
         function calculateSalary() {
             const hourlyWage = parseFloat(document.getElementById('hourlyWage').value);
