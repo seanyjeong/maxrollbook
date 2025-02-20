@@ -30,6 +30,7 @@
         async function loadTeachers() {
             const response = await fetch('https://supermax.kr/teachers');
             const teachers = await response.json();
+            console.log('강사 목록:', teachers);
             const select = document.getElementById('teacherSelect');
 
             teachers.forEach(teacher => {
@@ -48,8 +49,12 @@
             const year = month.split('-')[0];
             const monthNumber = month.split('-')[1];
 
+            console.log(`조회 요청: 강사ID=${teacherId}, year=${year}, month=${monthNumber}`);
+
             const response = await fetch(`https://supermax.kr/attendanceteacher?id=${teacherId}&year=${year}&month=${monthNumber}`);
             const records = await response.json();
+
+            console.log('조회된 출근 기록:', records);
 
             const firstDay = new Date(year, monthNumber - 1, 1).getDay();
             const lastDate = new Date(year, monthNumber, 0).getDate();
@@ -79,6 +84,8 @@
 
                 const record = records.find(r => r.출근일.startsWith(dateString));
                 let 상태숫자 = record ? record[요일칼럼] : 0;
+
+                console.log(`날짜: ${dateString}, 요일: ${요일칼럼}, 상태: ${상태숫자}`);
 
                 let className = 'day';
                 let displayText = day;
