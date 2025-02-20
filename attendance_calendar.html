@@ -3,61 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>강사 출근 현황 (달력)</title>
+    <title>출근 현황 (달력)</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
         body { font-size: 16px; }
-        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
-        .day { padding: 8px; border-radius: 5px; background-color: #f1f1f1; }
-        .day.work { background-color: #c8e6c9; } /* 출근 - 연한 초록 */
-        .day.late { background-color: #fff9c4; } /* 지각 - 연한 노랑 */
-        .day.off { background-color: #ffcdd2; } /* 휴무 - 연한 빨강 */
-        .controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-        .result { margin-top: 12px; font-weight: bold; }
-        .input-group { display: flex; gap: 8px; }
-        .btn { padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer; text-align: center; border-radius: 5px; }
+        select, input, button { font-size: 16px; padding: 5px; }
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 20px; }
+        .day-cell { border: 1px solid #ccc; text-align: center; padding: 10px; }
+        .legend { margin-top: 10px; }
+        .legend span { display: inline-block; width: 20px; height: 20px; margin-right: 5px; }
+        .출근 { background-color: #D4EDDA; }
+        .지각 { background-color: #FFF3CD; }
+        .휴무 { background-color: #F8D7DA; }
+        .center { text-align: center; }
+        .btn { margin-top: 10px; padding: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
-    <h1 style="text-align: center;">출근 현황 (달력)</h1>
-
-    <div class="controls">
-        <div class="input-group">
-            <select id="teacherSelect" style="flex: 1;"></select>
-            <input type="month" id="monthInput" style="flex: 1;">
-            <button class="btn" onclick="fetchAttendance()">조회</button>
-        </div>
+    <h1 class="center">출근 현황 (달력)</h1>
+    <div class="center">
+        <select id="teacherSelect"></select>
+        <input type="month" id="monthSelect">
+        <button class="btn" onclick="fetchAttendance()">조회</button>
     </div>
-
-    <div id="calendar" class="calendar"></div>
-    <p id="attendanceSummary" class="result">출근일수: 0일</p>
-
-    <div class="input-group">
-        <input type="number" id="hourlyWage" placeholder="시급 입력" style="flex: 1;">
+    <div class="calendar" id="calendar"></div>
+    <div class="legend center">
+        <span class="출근"></span> 출근
+        <span class="지각"></span> 지각
+        <span class="휴무"></span> 휴무
+    </div>
+    <div class="center">
+        <p id="workDaysCount">출근일수: 0일</p>
+        <input type="number" id="hourlyWage" placeholder="시급 입력"> 원
         <button class="btn" onclick="calculateSalary()">급여 계산</button>
+        <p id="calculatedSalary">급여: 0원</p>
     </div>
-    <p id="salaryResult" class="result">급여: 0원</p>
 
     <script>
-        let teachers = [];
-        let workDays = 0;
-
-        async function fetchTeachers() {
+        async function loadTeachers() {
             const response = await fetch('https://supermax.kr/teachers');
-            teachers = await response.json();
+            const teachers = await response.json();
             const select = document.getElementById('teacherSelect');
-            select.innerHTML = teachers.map(teacher => `<option value="${teacher.id}">${teacher.이름}</option>`).join('');
+            teachers.forEach(teacher => {
+                const option = document.createElement('option');
+                option.value = teacher.id;
+                option.textContent = `${teacher.이름} (${teacher.직급})`;
+                select.appendChild(option);
+            });
         }
 
         async function fetchAttendance() {
             const teacherId = document.getElementById('teacherSelect').value;
-            const monthValue = document.getElementById('monthInput').value;
-            const [year, month] = monthValue.split('-');
+            const monthValue = document.getElementById('monthSelect').value;
+            if (!monthValue) {
+                alert('월을 선택해주세요.');
+                return;
+            }
 
+            const [year, month] = monthValue.split('-');
             console.log(`조회 요청: 강사ID=${teacherId}, year=${year}, month=${month}`);
 
             const response = await fetch(`https://supermax.kr/attendanceteacher?id=${teacherId}&year=${year}&month=${month}`);
             const records = await response.json();
+
             console.log('조회된 출근 기록:', records);
 
             renderCalendar(year, month, records);
@@ -67,64 +75,70 @@
             const calendar = document.getElementById('calendar');
             calendar.innerHTML = '';
 
-            const firstDay = new Date(year, month - 1, 1).getDay();
-            const lastDate = new Date(year, month, 0).getDate();
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDay = new Date(year, month, 0);
 
-            workDays = 0;
-            const 요일명 = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
-            // 요일 표시
-            요일명.forEach(day => {
-                const dayLabel = document.createElement('div');
-                dayLabel.className = 'day';
-                dayLabel.textContent = day.substring(0, 1);
-                dayLabel.style.fontWeight = 'bold';
-                calendar.appendChild(dayLabel);
+            dayNames.forEach(dayName => {
+                const dayHeader = document.createElement('div');
+                dayHeader.textContent = dayName;
+                dayHeader.style.fontWeight = 'bold';
+                dayHeader.classList.add('day-cell');
+                calendar.appendChild(dayHeader);
             });
 
-            for (let i = 0; i < firstDay; i++) {
-                calendar.appendChild(document.createElement('div'));
-            }
+            let 출근일수 = 0;
 
-            for (let date = 1; date <= lastDate; date++) {
-                const day = new Date(year, month - 1, date).getDay();
-                const dayName = 요일명[day];
-                const dateString = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
-                const record = records.find(r => r.출근일.startsWith(dateString));
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const date = new Date(year, month - 1, i);
+                const 요일명 = dayNames[date.getDay()];
+                const 날짜 = date.toISOString().split('T')[0];
 
-                let state = 0;
+                const cell = document.createElement('div');
+                cell.classList.add('day-cell');
+                cell.textContent = i;
+
+                const record = records.find(r => {
+                    const 출근일 = new Date(r.출근일);
+                    const kst출근일 = new Date(출근일.getTime() + (9 * 60 * 60 * 1000));
+                    const 출근일자 = kst출근일.toISOString().split('T')[0];
+                    return 출근일자 === 날짜;
+                });
+
                 if (record) {
-                    state = record[dayName] || 0;
-                    console.log(`날짜: ${dateString}, 레코드 확인:`, record);
+                    console.log(`날짜: ${날짜}, 레코드 확인:`, record);
+                    if (record[요일명] === 1) {
+                        cell.classList.add('출근');
+                        출근일수++;
+                    } else if (record[요일명] === 2) {
+                        cell.classList.add('지각');
+                        출근일수++;
+                    } else {
+                        cell.classList.add('휴무');
+                    }
                 }
 
-                const dayElement = document.createElement('div');
-                dayElement.classList.add('day');
-                dayElement.textContent = date;
-
-                if (state === 1) {
-                    dayElement.classList.add('work');
-                    workDays++;
-                } else if (state === 2) {
-                    dayElement.classList.add('late');
-                    workDays++;
-                } else if (state === 3) {
-                    dayElement.classList.add('off');
-                }
-
-                calendar.appendChild(dayElement);
+                calendar.appendChild(cell);
             }
 
-            document.getElementById('attendanceSummary').textContent = `출근일수: ${workDays}일`;
+            document.getElementById('workDaysCount').textContent = `출근일수: ${출근일수}일`;
         }
 
         function calculateSalary() {
-            const hourlyWage = parseInt(document.getElementById('hourlyWage').value) || 0;
+            const hourlyWage = parseFloat(document.getElementById('hourlyWage').value);
+            const workDays = parseInt(document.getElementById('workDaysCount').textContent.replace(/[^0-9]/g, ''), 10);
+
+            if (isNaN(hourlyWage) || hourlyWage <= 0) {
+                alert('올바른 시급을 입력해주세요.');
+                return;
+            }
+
             const salary = workDays * 2.5 * hourlyWage;
-            document.getElementById('salaryResult').textContent = `급여: ${salary.toLocaleString()}원`;
+            document.getElementById('calculatedSalary').textContent = `급여: ${salary.toLocaleString()}원`;
         }
 
-        fetchTeachers();
+        loadTeachers();
     </script>
 </body>
 </html>
