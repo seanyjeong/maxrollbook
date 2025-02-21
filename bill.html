@@ -100,6 +100,7 @@
         <button onclick="calculateSalary()">급여 계산</button>
         <button onclick="downloadPDF()">PDF 저장</button>
         <button onclick="confirmSalary()">급여 확정</button>
+        <button onclick="confirmSalary()">급여 이체</button>
 
 
     </div>
@@ -258,13 +259,30 @@ async function redirectToToss() {
 
     const bankName = result.은행명;
     const bankAccount = result.계좌번호;
+    const message = `${teacherName} 급여`;
 
-    // ✅ Toss 공식 송금 URL 사용 (웹 + 앱 호환 가능)
-    const tossUrl = `https://toss.im/transfer?bank=${encodeURIComponent(bankName)}&account=${encodeURIComponent(bankAccount)}&amount=${salaryAmount}&message=${encodeURIComponent(teacherName + ' 급여')}`;
+    // ✅ 클립보드에 송금 정보 복사
+    const transferInfo = `📌 송금 정보\n- 은행명: ${bankName}\n- 계좌번호: ${bankAccount}\n- 금액: ₩${salaryAmount.toLocaleString()}\n- 송금 메모: ${message}`;
+    
+    try {
+        await navigator.clipboard.writeText(transferInfo);
+        alert("송금 정보가 복사되었습니다. Toss 앱을 열어 직접 송금하세요.");
+    } catch (err) {
+        alert("송금 정보를 자동 복사할 수 없습니다. 직접 입력해주세요.");
+    }
 
-    // ✅ Toss 앱 실행 (또는 웹으로 이동)
-    window.location.href = tossUrl;
+    // ✅ Toss 앱 실행 시도 (모바일 전용)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+        try {
+            const tossAppLink = `intent://send?recipientBank=${encodeURIComponent(bankName)}&recipientAccount=${encodeURIComponent(bankAccount)}&amount=${salaryAmount}&message=${encodeURIComponent(message)}#Intent;scheme=tossbank;package=viva.republica.toss;end;`;
+            window.location.href = tossAppLink;
+        } catch (err) {
+            alert("Toss 앱 실행이 불가능합니다. 수동으로 송금해주세요.");
+        }
+    }
 }
+
 
 
 
