@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
         body { font-size: 16px; }
-        select, input, button { font-size: 16px; padding: 5px; }
+        select, input, button { font-size: 16px; padding: 5px; margin: 5px; }
         .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 20px; }
         .day-cell { border: 1px solid #ccc; text-align: center; padding: 10px; }
         .legend { margin-top: 10px; }
@@ -33,9 +33,25 @@
     </div>
     <div class="center">
         <p id="workDaysCount">출근일수: 0일</p>
+        <input type="number" id="hourlyWage" placeholder="시급 입력"> 원
+        <button class="btn" onclick="calculateSalary()">급여 계산</button>
+        <p id="calculatedSalary">급여: 0원</p>
     </div>
 
     <script>
+        async function loadTeachers() {
+            const response = await fetch('https://supermax.kr/teachers');
+            const teachers = await response.json();
+            const select = document.getElementById('teacherSelect');
+
+            teachers.forEach(teacher => {
+                const option = document.createElement('option');
+                option.value = teacher.id;
+                option.textContent = `${teacher.이름} (${teacher.직급})`;
+                select.appendChild(option);
+            });
+        }
+
         async function fetchAttendance() {
             const teacherId = document.getElementById('teacherSelect').value;
             const monthValue = document.getElementById('monthSelect').value;
@@ -45,12 +61,12 @@
             }
 
             const [year, month] = monthValue.split('-');
+            console.log(`📢 조회 요청: 강사ID=${teacherId}, year=${year}, month=${month}`);
 
             const response = await fetch(`https://supermax.kr/attendanceteacher?id=${teacherId}&year=${year}&month=${month}`);
             const records = await response.json();
 
-            console.log('조회된 출근 기록:', records);
-
+            console.log('📢 조회된 출근 기록:', records);
             renderCalendar(year, month, records);
         }
 
@@ -58,18 +74,39 @@
             const calendar = document.getElementById('calendar');
             calendar.innerHTML = '';
 
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDay = new Date(year, month, 0);
+
+            const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+
+            // 요일 헤더 추가
+            dayNames.forEach(dayName => {
+                const dayHeader = document.createElement('div');
+                dayHeader.textContent = dayName;
+                dayHeader.style.fontWeight = 'bold';
+                dayHeader.classList.add('day-cell');
+                calendar.appendChild(dayHeader);
+            });
+
             let 출근일수 = 0;
 
-            for (let i = 1; i <= 31; i++) {
-                const 날짜 = `${year}-${month.padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const date = new Date(year, month - 1, i);
+                const 요일명 = dayNames[date.getDay()];
+                const 날짜 = date.toISOString().split('T')[0];
+
                 const cell = document.createElement('div');
                 cell.classList.add('day-cell');
                 cell.textContent = i;
 
-                const record = records.find(r => r.출근일.split('T')[0] === 날짜);
+                const record = records.find(r => {
+                    const 출근일 = new Date(r.출근일);
+                    const kst출근일 = new Date(출근일.getTime() + (9 * 60 * 60 * 1000));
+                    return kst출근일.toISOString().split('T')[0] === 날짜;
+                });
 
                 if (record) {
-                    console.log(`날짜: ${날짜}, 레코드 확인:`, record);
+                    console.log(`📢 날짜: ${날짜}, 레코드 확인:`, record);
                     if (record.출근 === 1) {
                         cell.classList.add('출근');
                         출근일수++;
@@ -86,6 +123,21 @@
 
             document.getElementById('workDaysCount').textContent = `출근일수: ${출근일수}일`;
         }
+
+        function calculateSalary() {
+            const hourlyWage = parseFloat(document.getElementById('hourlyWage').value);
+            const workDays = parseInt(document.getElementById('workDaysCount').textContent.replace(/[^0-9]/g, ''), 10);
+
+            if (isNaN(hourlyWage) || hourlyWage <= 0) {
+                alert('올바른 시급을 입력해주세요.');
+                return;
+            }
+
+            const salary = workDays * 2.5 * hourlyWage;
+            document.getElementById('calculatedSalary').textContent = `급여: ${salary.toLocaleString()}원`;
+        }
+
+        loadTeachers();
     </script>
 </body>
 </html>
