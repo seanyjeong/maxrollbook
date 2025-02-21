@@ -7,8 +7,22 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
         body { font-size: 16px; text-align: center; }
-        .btn { padding: 12px 24px; background-color: #4CAF50; color: white; border: none; cursor: pointer; text-align: center; border-radius: 5px; font-size: 16px; margin: 10px auto; display: block; width: 80%; max-width: 300px; }
+        .btn { 
+            padding: 12px 24px; 
+            background-color: #4CAF50; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            text-align: center; 
+            border-radius: 5px; 
+            font-size: 16px; 
+            margin: 10px auto; 
+            display: block; 
+            width: 80%; 
+            max-width: 300px; 
+        }
         .btn-secondary { background-color: #008CBA; }
+        .btn-warning { background-color: #f39c12; }
         .hidden { display: none; }
     </style>
 </head>
@@ -17,9 +31,10 @@
     <button class="btn" onclick="location.href='add_teacher.html'">강사 추가</button>
     <button class="btn btn-secondary" onclick="location.href='attendance_check.html'">출근 체크</button>
     <button class="btn" onclick="location.href='attendance_calendar.html'">출근 현황 (달력)</button>
-    
+    <button class="btn btn-warning" onclick="location.href='attendance_edit.html'">출근 기록 수정</button>
+
     <footer style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
-        &copy; 2025 강사 출근부 시스템
+        &copy; 2025 일산맥스 강사 출근부 시스템 BY 정원장
     </footer>
 </body>
 </html>
