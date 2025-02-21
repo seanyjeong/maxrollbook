@@ -76,6 +76,21 @@
             </tr>
         </table>
 
+        
+<!-- ✅ 출근 날짜를 표시하는 새로운 테이블 -->
+<h3>출근 일자</h3>
+<table class="payroll-table">
+    <thead>
+        <tr>
+            <th>날짜</th>
+            <th>요일</th>
+        </tr>
+    </thead>
+    <tbody id="attendanceDatesTable">
+        <tr><td colspan="2">출근 기록 없음</td></tr>
+    </tbody>
+</table>
+
         <!-- ✅ 강조된 직인 스타일 -->
         <div class="signature">맥스체대입시 일산교육원장</div>
     </div>
@@ -107,33 +122,57 @@
             document.getElementById('payroll-title').textContent = `#${teacherName} #${monthValue}월 급여명세서`;
         }
 
-        async function calculateSalary() {
-            const teacherId = document.getElementById('teacher').value;
-            const role = document.getElementById('teacher').selectedOptions[0].dataset.role;
-            const monthValue = document.getElementById('month').value;
-            const dailyRate = parseFloat(document.getElementById('dailyRate').value);
-            const hourlyRate = parseFloat(document.getElementById('hourlyRate').value);
-            const monthlySalary = parseFloat(document.getElementById('monthlySalary').value);
+    async function calculateSalary() {
+    const teacherId = document.getElementById('teacher').value;
+    const role = document.getElementById('teacher').selectedOptions[0].dataset.role;
+    const monthValue = document.getElementById('month').value;
+    const dailyRate = parseFloat(document.getElementById('dailyRate').value);
+    const hourlyRate = parseFloat(document.getElementById('hourlyRate').value);
+    const monthlySalary = parseFloat(document.getElementById('monthlySalary').value);
 
-            if (!teacherId || !monthValue) {
-                alert('모든 정보를 입력해주세요.');
-                return;
-            }
+    if (!teacherId || !monthValue) {
+        alert('모든 정보를 입력해주세요.');
+        return;
+    }
 
-            const [year, month] = monthValue.split('-');
-            const response = await fetch(`https://supermax.kr/attendancehistory_monthly?year=${year}&month=${month}`);
-            const attendanceRecords = await response.json();
-            const attendanceDays = attendanceRecords.filter(record => record.강사_id == teacherId && record.출근 === 1).length;
+    const [year, month] = monthValue.split('-');
+    const response = await fetch(`https://supermax.kr/attendancehistory_monthly?year=${year}&month=${month}`);
+    const attendanceRecords = await response.json();
 
-            let totalSalary = (role === "팀장") ? monthlySalary : attendanceDays * dailyRate;
-            const taxAmount = (role === "팀장") ? totalSalary * 0.033 : 0;
-            const netSalary = totalSalary - taxAmount;
+    // ✅ 출근 또는 지각한 날짜 리스트 생성
+    const attendanceDays = attendanceRecords
+        .filter(record => record.강사_id == teacherId && (record.출근 === 1 || record.지각 === 1))
+        .map(record => {
+            const dateObj = new Date(record.출근일);
+            const formattedDate = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+            const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()]; // 요일 추출
+            return { date: formattedDate, day: dayOfWeek };
+        });
 
-            document.getElementById('attendanceDays').textContent = attendanceDays;
-            document.getElementById('totalSalary').textContent = `₩${totalSalary.toLocaleString()}`;
-            document.getElementById('taxAmount').textContent = `₩${taxAmount.toLocaleString()}`;
-            document.getElementById('netSalary').textContent = `₩${netSalary.toLocaleString()}`;
-        }
+    let totalSalary = (role === "팀장") ? monthlySalary : attendanceDays.length * dailyRate;
+    const taxAmount = (role === "팀장") ? totalSalary * 0.033 : 0;
+    const netSalary = totalSalary - taxAmount;
+
+    document.getElementById('attendanceDays').textContent = attendanceDays.length;
+    document.getElementById('totalSalary').textContent = `₩${totalSalary.toLocaleString()}`;
+    document.getElementById('taxAmount').textContent = `₩${taxAmount.toLocaleString()}`;
+    document.getElementById('netSalary').textContent = `₩${netSalary.toLocaleString()}`;
+
+    // ✅ HTML 테이블에 출근 날짜 추가
+    const tableBody = document.getElementById('attendanceDatesTable');
+    tableBody.innerHTML = "";
+
+    if (attendanceDays.length > 0) {
+        attendanceDays.forEach(day => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${day.date}</td><td>${day.day}</td>`;
+            tableBody.appendChild(row);
+        });
+    } else {
+        tableBody.innerHTML = `<tr><td colspan="2">출근 기록 없음</td></tr>`;
+    }
+}
+
 
 async function downloadPDF() {
     const payrollSection = document.getElementById('payroll-section');
