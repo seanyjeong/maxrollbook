@@ -13,9 +13,15 @@
         .input-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .input-container label { flex: 1; text-align: left; }
         .input-container input { flex: 2; padding: 5px; }
-        .hidden { display: none; } /* PDF에 표시되지 않는 입력 칸 */
         .payroll-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .payroll-table th, .payroll-table td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+        .signature { margin-top: 20px; font-size: 20px; font-weight: bold; } /* 직인 스타일 */
+        .hidden-pdf { display: block; } /* 화면에서는 보이지만 PDF 저장 시 숨김 */
+        .hidden-pdf-pdf { display: none; } /* PDF에서만 보이도록 */
+        @media print {
+            .hidden-pdf { display: none; } /* PDF 저장 시 숨김 */
+            .hidden-pdf-pdf { display: block; } /* PDF에서만 보이도록 */
+        }
         .button-container { margin-top: 20px; }
     </style>
 </head>
@@ -28,7 +34,7 @@
 
         <div class="input-container">
             <label for="teacher">강사 이름:</label>
-            <select id="teacher" onchange="updateTitle()"></select>
+            <select id="teacher" onchange="updateTitle(); toggleSalaryInputs();"></select>
         </div>
 
         <div class="input-container">
@@ -36,26 +42,18 @@
             <input type="month" id="month" onchange="updateTitle()">
         </div>
 
-        <div class="input-container hidden">
-            <label for="salaryType">급여 타입:</label>
-            <select id="salaryType">
-                <option value="hourly">시급</option>
-                <option value="daily">일급</option>
-                <option value="monthly">월급</option>
-            </select>
-        </div>
-
-        <div class="input-container hidden">
+        <!-- ✅ 시급·일급·월급 입력 가능 -->
+        <div class="input-container salary-input hidden-pdf" id="hourlyRateContainer">
             <label for="hourlyRate">시급 (₩):</label>
             <input type="number" id="hourlyRate" placeholder="예: 25000">
         </div>
 
-        <div class="input-container hidden">
+        <div class="input-container salary-input hidden-pdf" id="dailyRateContainer">
             <label for="dailyRate">일급 (₩):</label>
             <input type="number" id="dailyRate" placeholder="예: 100000">
         </div>
 
-        <div class="input-container hidden">
+        <div class="input-container salary-input hidden-pdf" id="monthlySalaryContainer">
             <label for="monthlySalary">월급 (₩):</label>
             <input type="number" id="monthlySalary" placeholder="예: 3000000">
         </div>
@@ -74,6 +72,9 @@
                 <td id="netSalary">₩0</td>
             </tr>
         </table>
+
+        <!-- ✅ 강조된 직인 스타일 -->
+        <div class="signature">맥스체대입시 일산교육원장</div>
 
         <div class="button-container">
             <button onclick="calculateSalary()">급여 계산</button>
@@ -102,6 +103,13 @@
             document.getElementById('payroll-title').textContent = `#${teacherName} #${monthValue}월 급여명세서`;
         }
 
+        function toggleSalaryInputs() {
+            const role = document.getElementById('teacher').selectedOptions[0].dataset.role;
+            document.getElementById('hourlyRateContainer').classList.toggle('hidden-pdf', role === "팀장");
+            document.getElementById('dailyRateContainer').classList.toggle('hidden-pdf', role === "팀장");
+            document.getElementById('monthlySalaryContainer').classList.toggle('hidden-pdf', role !== "팀장");
+        }
+
         async function calculateSalary() {
             const teacherId = document.getElementById('teacher').value;
             const role = document.getElementById('teacher').selectedOptions[0].dataset.role;
@@ -120,13 +128,7 @@
             const attendanceRecords = await response.json();
             const attendanceDays = attendanceRecords.filter(record => record.강사_id == teacherId && record.출근 === 1).length;
 
-            let totalSalary = 0;
-            if (role === "팀장") {
-                totalSalary = monthlySalary; 
-            } else {
-                totalSalary = attendanceDays * dailyRate; 
-            }
-
+            let totalSalary = (role === "팀장") ? monthlySalary : attendanceDays * dailyRate;
             const taxAmount = (role === "팀장") ? totalSalary * 0.033 : 0;
             const netSalary = totalSalary - taxAmount;
 
