@@ -15,13 +15,16 @@
         .input-container input { flex: 2; padding: 5px; }
         .payroll-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .payroll-table th, .payroll-table td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-        .signature { margin-top: 20px; font-size: 20px; font-weight: bold; } /* 직인 스타일 */
-        .hidden-pdf { display: block; } /* 화면에서는 보이지만 PDF 저장 시 숨김 */
-        .hidden-pdf-pdf { display: none; } /* PDF에서만 보이도록 */
+        .signature { margin-top: 20px; font-size: 22px; font-weight: bold; } /* 직인 스타일 */
+        
+        /* ✅ PDF 저장 시 보이지 않게 설정 */
+        .hidden-for-pdf { display: block; } /* 화면에서는 보임 */
+        .hide-in-pdf { display: none; } /* PDF에서는 숨김 */
+
         @media print {
-            .hidden-pdf { display: none; } /* PDF 저장 시 숨김 */
-            .hidden-pdf-pdf { display: block; } /* PDF에서만 보이도록 */
+            .hidden-for-pdf { display: none; } /* PDF 저장 시 숨김 */
         }
+        
         .button-container { margin-top: 20px; }
     </style>
 </head>
@@ -42,18 +45,18 @@
             <input type="month" id="month" onchange="updateTitle()">
         </div>
 
-        <!-- ✅ 시급·일급·월급 입력 가능 -->
-        <div class="input-container salary-input hidden-pdf" id="hourlyRateContainer">
+        <!-- ✅ 시급·일급·월급 입력 가능 (PDF에서는 숨김) -->
+        <div class="input-container salary-input hidden-for-pdf" id="hourlyRateContainer">
             <label for="hourlyRate">시급 (₩):</label>
             <input type="number" id="hourlyRate" placeholder="예: 25000">
         </div>
 
-        <div class="input-container salary-input hidden-pdf" id="dailyRateContainer">
+        <div class="input-container salary-input hidden-for-pdf" id="dailyRateContainer">
             <label for="dailyRate">일급 (₩):</label>
             <input type="number" id="dailyRate" placeholder="예: 100000">
         </div>
 
-        <div class="input-container salary-input hidden-pdf" id="monthlySalaryContainer">
+        <div class="input-container salary-input hidden-for-pdf" id="monthlySalaryContainer">
             <label for="monthlySalary">월급 (₩):</label>
             <input type="number" id="monthlySalary" placeholder="예: 3000000">
         </div>
@@ -76,7 +79,8 @@
         <!-- ✅ 강조된 직인 스타일 -->
         <div class="signature">맥스체대입시 일산교육원장</div>
 
-        <div class="button-container">
+        <!-- ✅ 버튼도 PDF 저장 시 보이지 않게 설정 -->
+        <div class="button-container hidden-for-pdf">
             <button onclick="calculateSalary()">급여 계산</button>
             <button onclick="downloadPDF()">PDF 저장</button>
         </div>
@@ -105,9 +109,9 @@
 
         function toggleSalaryInputs() {
             const role = document.getElementById('teacher').selectedOptions[0].dataset.role;
-            document.getElementById('hourlyRateContainer').classList.toggle('hidden-pdf', role === "팀장");
-            document.getElementById('dailyRateContainer').classList.toggle('hidden-pdf', role === "팀장");
-            document.getElementById('monthlySalaryContainer').classList.toggle('hidden-pdf', role !== "팀장");
+            document.getElementById('hourlyRateContainer').classList.toggle('hidden-for-pdf', role === "팀장");
+            document.getElementById('dailyRateContainer').classList.toggle('hidden-for-pdf', role === "팀장");
+            document.getElementById('monthlySalaryContainer').classList.toggle('hidden-for-pdf', role !== "팀장");
         }
 
         async function calculateSalary() {
