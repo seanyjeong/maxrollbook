@@ -13,7 +13,23 @@
         <label>직급: <input type="text" name="직급"></label>
         <label>전화번호: <input type="tel" name="전화번호"></label>
         <label>주민번호: <input type="text" name="주민번호" required placeholder="000101-1234567"></label>
-        <label>계좌번호: <input type="text" name="계좌번호" required placeholder="은행명 포함 가능"></label>
+
+        <label>은행명:
+            <select name="은행명" required>
+                <option value="">은행 선택</option>
+                <option value="국민은행">국민은행</option>
+                <option value="신한은행">신한은행</option>
+                <option value="우리은행">우리은행</option>
+                <option value="하나은행">하나은행</option>
+                <option value="농협은행">농협은행</option>
+                <option value="토스뱅크">토스뱅크</option>
+                <option value="카카오뱅크">카카오뱅크</option>
+                <option value="기업은행">기업은행</option>
+            </select>
+        </label>
+
+        <label>계좌번호: <input type="text" name="계좌번호" required placeholder="110-1234-5678"></label>
+        
         <button type="submit">추가</button>
     </form>
 
@@ -23,9 +39,9 @@
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData);
 
-            // ✅ 주민번호 & 계좌번호 필수 입력 체크
-            if (!data.이름 || !data.주민번호 || !data.계좌번호) {
-                alert("이름, 주민번호, 계좌번호는 필수 입력값입니다.");
+            // ✅ 필수 입력값 확인
+            if (!data.이름 || !data.주민번호 || !data.은행명 || !data.계좌번호) {
+                alert("이름, 주민번호, 은행명, 계좌번호는 필수 입력값입니다.");
                 return;
             }
 
