@@ -99,7 +99,9 @@
     <div class="button-container pdf-hidden">
         <button onclick="calculateSalary()">급여 계산</button>
         <button onclick="downloadPDF()">PDF 저장</button>
+        <button onclick="confirmSalary()">급여 확정</button>
     </div>
+    
 
     <script>
         async function loadTeachers() {
@@ -173,6 +175,40 @@ async function calculateSalary() {
         tableBody.innerHTML = `<tr><td colspan="2">출근 기록 없음</td></tr>`;
     }
 }
+        async function confirmSalary() {
+    const teacherId = document.getElementById('teacher').value;
+    const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
+    const monthValue = document.getElementById('month').value;
+    const netSalary = parseFloat(document.getElementById('netSalary').textContent.replace(/₩|,/g, ''));
+
+    if (!teacherId || !monthValue || isNaN(netSalary)) {
+        alert("급여 계산 후 확정할 수 있습니다.");
+        return;
+    }
+
+    const [year, month] = monthValue.split('-');
+
+    const salaryData = {
+        year: parseInt(year),
+        month: parseInt(month),
+        teacherId: teacherId,
+        teacherName: teacherName,
+        salaryAmount: netSalary
+    };
+
+    const response = await fetch('https://supermax.kr/confirmSalary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(salaryData)
+    });
+
+    if (response.ok) {
+        alert("급여가 확정되었습니다!");
+    } else {
+        alert("급여 확정 중 오류 발생!");
+    }
+}
+
 
 
 
