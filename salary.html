@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>급여 내역 조회</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <script>
+        async function fetchSalaryData() {
+            const monthValue = document.getElementById('monthSelect').value;
+            if (!monthValue) {
+                alert("월을 선택해주세요.");
+                return;
+            }
+
+            const [year, month] = monthValue.split('-');
+            const response = await fetch(`https://supermax.kr/getSalaryList?year=${year}&month=${month}`);
+            const data = await response.json();
+
+            const tableBody = document.getElementById('salaryTableBody');
+            tableBody.innerHTML = "";
+
+            let totalSalary = 0;
+
+            if (data.length > 0) {
+                data.forEach(record => {
+                    totalSalary += record.실지급액;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${record.강사이름}</td><td>₩${record.실지급액.toLocaleString()}</td>`;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = `<tr><td colspan="2">확정된 급여가 없습니다.</td></tr>`;
+            }
+
+            document.getElementById('totalSalary').textContent = `총 지급 금액: ₩${totalSalary.toLocaleString()}`;
+        }
+    </script>
+</head>
+<body>
+
+    <h1>급여 내역 조회</h1>
+
+    <label for="monthSelect">월 선택:</label>
+    <input type="month" id="monthSelect">
+    <button onclick="fetchSalaryData()">조회</button>
+
+    <h2>급여 확정된 강사 목록</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>강사 이름</th>
+                <th>실지급액</th>
+            </tr>
+        </thead>
+        <tbody id="salaryTableBody">
+            <tr><td colspan="2">조회된 급여 데이터 없음</td></tr>
+        </tbody>
+    </table>
+
+    <h3 id="totalSalary">총 지급 금액: ₩0</h3>
+
+</body>
+</html>
