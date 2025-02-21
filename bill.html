@@ -100,6 +100,8 @@
         <button onclick="calculateSalary()">급여 계산</button>
         <button onclick="downloadPDF()">PDF 저장</button>
         <button onclick="confirmSalary()">급여 확정</button>
+        <button onclick="redirectToToss()">급여 이체</button>
+
     </div>
     
 
@@ -235,6 +237,35 @@ async function downloadPDF() {
         pdf.save(fileName);
     });
 }
+        async function redirectToToss() {
+    const teacherId = document.getElementById('teacher').value;
+    const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
+    const salaryAmount = parseFloat(document.getElementById('netSalary').textContent.replace(/₩|,/g, ''));
+
+    if (!teacherId || !teacherName || isNaN(salaryAmount)) {
+        alert("급여 계산 후 이체할 수 있습니다.");
+        return;
+    }
+
+    // ✅ 강사 계좌번호 & 은행명 조회
+    const response = await fetch(`https://supermax.kr/getTeacherAccount?teacherId=${teacherId}`);
+    const result = await response.json();
+
+    if (!response.ok || !result.계좌번호 || !result.은행명) {
+        alert("계좌 정보를 가져올 수 없습니다.");
+        return;
+    }
+
+    const bankName = result.은행명;
+    const bankAccount = result.계좌번호;
+
+    // ✅ Toss 송금 URL 생성
+    const tossUrl = `https://toss.me/?bank=${bankName}&accountNumber=${bankAccount}&amount=${salaryAmount}&message=${teacherName}+급여`;
+
+    // ✅ Toss 송금 페이지로 이동
+    window.location.href = tossUrl;
+}
+
 
 
         loadTeachers();
