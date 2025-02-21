@@ -101,16 +101,13 @@
             }
         }
 
-        function renderCalendar(year, month, records) {
-    const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
-    document.getElementById('monthTitle').textContent = `${year}년 ${monthNames[parseInt(month) - 1]}`;
-
+  function renderCalendar(year, month, records) {
     const calendar = document.getElementById('calendar');
     calendar.innerHTML = '';
 
     const firstDay = new Date(year, month - 1, 1);
     const lastDay = new Date(year, month, 0);
-    const startWeekDay = firstDay.getDay(); // 0(일)~6(토)
+    const startWeekDay = firstDay.getDay();
 
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -140,18 +137,10 @@
 
         // 🟢 현재 날짜 (YYYY-MM-DD 형식)
         const currentDate = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        
-        // 🟢 DB에서 가져온 출근일과 비교
-        const record = records.find(r => {
-            const recordDate = new Date(r.출근일);
-            const KSTrecordDate = new Date(recordDate.getTime() + (9 * 60 * 60 * 1000)); // 🟢 UTC -> KST 변환
-            const recordDateStr = KSTrecordDate.toISOString().split('T')[0]; // 🟢 YYYY-MM-DD 형태로 변환
-            
-            console.log(`🔍 비교: ${recordDateStr} vs ${currentDate}`);
-            return recordDateStr === currentDate;
-        });
 
-        // 🟢 출근 데이터 확인 후 색상 적용
+        // 🟢 DB에서 가져온 출근일과 비교 (KST 변환)
+        const record = records.find(r => r.출근일 === currentDate);
+
         if (record) {
             console.log(`✅ ${currentDate}의 기록:`, record);
             if (Number(record.출근) === 1) {
@@ -170,6 +159,7 @@
 
     document.getElementById('workDaysCount').textContent = `출근일수: ${출근일수}일`;
 }
+
 
         function calculateSalary() {
             const hourlyWage = parseFloat(document.getElementById('hourlyWage').value);
