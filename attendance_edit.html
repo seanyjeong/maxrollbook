@@ -17,15 +17,25 @@
         .hidden { display: none; }
         select, button { margin: 5px; padding: 8px; font-size: 16px; }
 
+        /* 출근 상태 버튼 스타일 */
         .status-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
-        .status-btn { padding: 10px 20px; border: none; cursor: pointer; font-size: 14px; border-radius: 5px; }
-        .btn-selected { color: white; font-weight: bold; }
-        .출근-btn { background-color: #28a745; } /* 초록 */
-        .지각-btn { background-color: #ffc107; } /* 노랑 */
-        .휴무-btn { background-color: #dc3545; } /* 빨강 */
-        .출근-btn.btn-selected { background-color: #218838; }
-        .지각-btn.btn-selected { background-color: #e0a800; }
-        .휴무-btn.btn-selected { background-color: #c82333; }
+        .status-btn {
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 5px;
+            transition: all 0.3s ease-in-out;
+            filter: brightness(90%);
+        }
+        .출근-btn { background-color: #A8E6A1; } /* 연한 초록 */
+        .지각-btn { background-color: #FFE699; } /* 연한 노랑 */
+        .휴무-btn { background-color: #FFB3B3; } /* 연한 빨강 */
+
+        /* 선택된 버튼은 강조 */
+        .출근-btn.btn-selected { background-color: #28a745; filter: brightness(110%); }
+        .지각-btn.btn-selected { background-color: #ffc107; filter: brightness(110%); }
+        .휴무-btn.btn-selected { background-color: #dc3545; filter: brightness(110%); }
     </style>
 </head>
 <body>
@@ -126,10 +136,12 @@
             // 모든 버튼에서 선택된 상태 제거
             document.querySelectorAll(`.status-btn[data-teacher-id="${teacherId}"]`).forEach(btn => {
                 btn.classList.remove('btn-selected');
+                btn.style.filter = "brightness(90%)"; // 선택 해제 시 밝기 낮추기
             });
 
-            // 현재 선택한 버튼만 활성화
+            // 현재 선택한 버튼만 강조
             button.classList.add('btn-selected');
+            button.style.filter = "brightness(110%)"; // 선택된 버튼 밝기 증가
         }
         
         async function saveAttendance() {
