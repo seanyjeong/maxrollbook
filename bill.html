@@ -259,12 +259,22 @@ async function redirectToToss() {
     const bankName = result.은행명;
     const bankAccount = result.계좌번호;
 
-    // ✅ Toss 송금 URL 생성 (Toss 앱 실행)
-    const tossUrl = `intent://send?recipientBank=${encodeURIComponent(bankName)}&recipientAccount=${encodeURIComponent(bankAccount)}&amount=${salaryAmount}&message=${encodeURIComponent(teacherName + ' 급여')}&appLaunch=true#Intent;scheme=tossbank;package=viva.republica.toss;end;`;
+    // ✅ Toss 앱 실행을 위한 다양한 링크 설정
+    const intentLink = `intent://send?recipientBank=${encodeURIComponent(bankName)}&recipientAccount=${encodeURIComponent(bankAccount)}&amount=${salaryAmount}&message=${encodeURIComponent(teacherName + ' 급여')}#Intent;scheme=tossbank;package=viva.republica.toss;end;`;
+    
+    const tossAppLink = `android-app://viva.republica.toss/send?recipientBank=${encodeURIComponent(bankName)}&recipientAccount=${encodeURIComponent(bankAccount)}&amount=${salaryAmount}&message=${encodeURIComponent(teacherName + ' 급여')}`;
 
-    // ✅ Toss 앱 실행
-    window.location.href = tossUrl;
+    const fallbackUrl = "https://play.google.com/store/apps/details?id=viva.republica.toss";
+
+    // ✅ Toss 앱 실행 시도 (일부 브라우저에서 `intent://`가 막힐 경우 대비)
+    window.location.href = intentLink;
+
+    // ✅ 일정 시간 후 Toss 앱이 실행되지 않으면 Play Store로 이동 (보조 처리)
+    setTimeout(() => {
+        window.location.href = tossAppLink;
+    }, 1500);
 }
+
 
 
 
