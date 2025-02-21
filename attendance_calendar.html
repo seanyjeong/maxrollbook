@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출근 현황 (달력)</title>
+    <title>일산맥스 강사 출근현황</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
         body { font-size: 16px; }
-        select, input, button { font-size: 16px; padding: 5px; margin: 5px; }
+        select, input, button { font-size: 18px; padding: 8px; margin: 10px; }
+        .container { text-align: center; }
         .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 20px; }
         .day-cell { border: 1px solid #ccc; text-align: center; padding: 10px; min-height: 50px; }
         .legend { margin-top: 10px; }
         .출근 { background-color: #D4EDDA; }
         .지각 { background-color: #FFF3CD; }
         .휴무 { background-color: #F8D7DA; }
-        .center { text-align: center; }
-        .btn { margin-top: 10px; padding: 10px; font-size: 16px; }
+        .btn { margin-top: 10px; padding: 10px; font-size: 18px; }
         .legend span { 
             display: inline-block;
             width: 20px;
@@ -24,18 +24,26 @@
             vertical-align: middle;
         }
         .month-title {
-            font-size: 1.5em;
+            font-size: 1.8em;
             margin: 20px 0;
             font-weight: bold;
+        }
+        .selection-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
         }
     </style>
 </head>
 <body>
-    <h1 class="center">출근 현황 (달력)</h1>
-    <div class="center">
-        <select id="teacherSelect"></select>
-        <input type="month" id="monthSelect">
-        <button class="btn" onclick="fetchAttendance()">조회</button>
+    <h1 class="center">일산맥스 강사 출근현황</h1>
+    <div class="container">
+        <div class="selection-box">
+            <select id="teacherSelect"></select>
+            <input type="month" id="monthSelect">
+            <button class="btn" onclick="fetchAttendance()">조회</button>
+        </div>
     </div>
     <div class="month-title center" id="monthTitle"></div>
     <div class="calendar" id="calendar"></div>
@@ -65,10 +73,8 @@
                     select.appendChild(option);
                 });
 
-                // 현재 날짜로 month input 초기화
                 const now = new Date();
-                const monthInput = document.getElementById('monthSelect');
-                monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                document.getElementById('monthSelect').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             } catch (error) {
                 console.error('교사 목록 로딩 실패:', error);
                 alert('교사 목록을 불러오는데 실패했습니다.');
@@ -92,7 +98,6 @@
                     throw new Error('서버 응답 오류');
                 }
                 const records = await response.json();
-
                 console.log('📢 조회된 출근 기록:', records);
                 renderCalendar(year, month, records);
             } catch (error) {
@@ -174,7 +179,6 @@
             document.getElementById('calculatedSalary').textContent = `급여: ${salary.toLocaleString()}원`;
         }
 
-        // 페이지 로드 시 교사 목록 불러오기
         loadTeachers();
     </script>
 </body>
