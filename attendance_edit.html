@@ -42,76 +42,79 @@
     </div>
 
     <script>
-        async function generateCalendar() {
-            const calendar = document.getElementById('calendar');
-            calendar.innerHTML = '';
+async function generateCalendar() {
+    const calendar = document.getElementById('calendar');
+    calendar.innerHTML = '';
 
-            const monthValue = document.getElementById('monthSelect').value;
-            if (!monthValue) {
-                alert('월을 선택해주세요.');
-                return;
-            }
+    const monthValue = document.getElementById('monthSelect').value;
+    if (!monthValue) {
+        alert('월을 선택해주세요.');
+        return;
+    }
 
-            const [year, month] = monthValue.split('-');
+    const [year, month] = monthValue.split('-');
 
-            // ✅ 한 달 전체 출근 기록 불러오기
-            const response = await fetch(`https://supermax.kr/attendancehistory_monthly?year=${year}&month=${month}`);
-            const attendanceRecords = await response.json();
-            console.log(`📢 ${month}월 출근 기록:`, attendanceRecords);
+    // ✅ 한 달 전체 출근 기록 불러오기
+    const response = await fetch(`https://supermax.kr/attendancehistory_monthly?year=${year}&month=${month}`);
+    const attendanceRecords = await response.json();
+    console.log(`📢 ${month}월 출근 기록:`, attendanceRecords);
 
-            const attendanceMap = {};
-            attendanceRecords.forEach(record => {
-                const 출근일 = record.출근일;
-                if (!attendanceMap[출근일]) {
-                    attendanceMap[출근일] = [];
-                }
-                attendanceMap[출근일].push(record);
-            });
+    const attendanceMap = {};
+    attendanceRecords.forEach(record => {
+        const 출근일 = record.출근일;
+        if (!attendanceMap[출근일]) {
+            attendanceMap[출근일] = { 출근: 0, 지각: 0, 휴무: 0 };
+        }
+        if (record.출근 === 1) attendanceMap[출근일].출근 = 1;
+        if (record.지각 === 1) attendanceMap[출근일].지각 = 1;
+        if (record.휴무 === 1) attendanceMap[출근일].휴무 = 1;
+    });
 
-            const firstDay = new Date(year, month - 1, 1);
-            const lastDay = new Date(year, month, 0);
-            const startWeekDay = firstDay.getDay();
-            const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
+    const startWeekDay = firstDay.getDay();
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 
-            // 요일 헤더 추가
-            dayNames.forEach(dayName => {
-                const dayHeader = document.createElement('div');
-                dayHeader.textContent = dayName;
-                dayHeader.style.fontWeight = 'bold';
-                dayHeader.classList.add('day-cell');
-                calendar.appendChild(dayHeader);
-            });
+    // 요일 헤더 추가
+    dayNames.forEach(dayName => {
+        const dayHeader = document.createElement('div');
+        dayHeader.textContent = dayName;
+        dayHeader.style.fontWeight = 'bold';
+        dayHeader.classList.add('day-cell');
+        calendar.appendChild(dayHeader);
+    });
 
-            // 빈 칸 채우기
-            for (let i = 0; i < startWeekDay; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.classList.add('day-cell');
-                calendar.appendChild(emptyCell);
-            }
+    // 빈 칸 채우기
+    for (let i = 0; i < startWeekDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.classList.add('day-cell');
+        calendar.appendChild(emptyCell);
+    }
 
-            // 날짜 셀 추가
-            for (let i = 1; i <= lastDay.getDate(); i++) {
-                const dateStr = `${year}-${month.padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                const cell = document.createElement('div');
-                cell.classList.add('day-cell');
-                cell.textContent = i;
+    // 날짜 셀 추가
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+        const dateStr = `${year}-${month.padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const cell = document.createElement('div');
+        cell.classList.add('day-cell');
+        cell.textContent = i;
 
-                // ✅ 출근 기록이 있는 경우 색상 적용
-                if (attendanceMap[dateStr]) {
-                    const records = attendanceMap[dateStr];
-                    let className = '';
-
-                    if (records.some(r => r.출근 === 1)) className = '출근';
-                    else if (records.some(r => r.지각 === 1)) className = '지각';
-                    else if (records.some(r => r.휴무 === 1)) className = '휴무';
-
-                    if (className) cell.classList.add(className);
-                }
-
-                cell.onclick = () => openAttendanceForm(dateStr);
-                calendar.appendChild(cell);
+        // ✅ 출근 기록이 하나라도 있으면 색상 적용
+        if (attendanceMap[dateStr]) {
+            const 기록 = attendanceMap[dateStr];
+            if (기록.출근 === 1) {
+                cell.classList.add('출근');
+            } else if (기록.지각 === 1) {
+                cell.classList.add('지각');
+            } else if (기록.휴무 === 1) {
+                cell.classList.add('휴무');
             }
         }
+
+        cell.onclick = () => openAttendanceForm(dateStr);
+        calendar.appendChild(cell);
+    }
+}
+
 
         async function openAttendanceForm(date) {
             document.getElementById('selectedDate').textContent = `${date} 출근 체크`;
