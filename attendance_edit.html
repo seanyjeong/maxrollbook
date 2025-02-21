@@ -9,55 +9,50 @@
         body { font-size: 16px; text-align: center; }
         .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 20px; }
         .day-cell { border: 1px solid #ccc; padding: 10px; min-height: 50px; cursor: pointer; }
-        .legend { margin-top: 10px; }
         .출근 { background-color: #D4EDDA; }
         .지각 { background-color: #FFF3CD; }
         .휴무 { background-color: #F8D7DA; }
         .center { text-align: center; }
         .hidden { display: none; }
-        .status-container { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
-        .status-btn {
-            padding: 10px 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
+        .selected { outline: 3px solid #007BFF; }
+        .btn { padding: 10px; font-size: 16px; margin: 5px; cursor: pointer; }
+        .attendance-btn { display: inline-block; padding: 10px 15px; margin: 5px; border: none; cursor: pointer; font-size: 14px; }
         .출근-btn { background-color: #D4EDDA; }
         .지각-btn { background-color: #FFF3CD; }
         .휴무-btn { background-color: #F8D7DA; }
-        .btn-selected { outline: 3px solid black; }
     </style>
 </head>
 <body>
     <h1>출근 기록 수정</h1>
     <input type="month" id="monthSelect">
-    <button onclick="generateCalendar()">조회</button>
-    <div class="calendar" id="calendar"></div>
+    <button class="btn" onclick="generateCalendar()">조회</button>
     
+    <div class="calendar" id="calendar"></div>
+
     <div id="attendanceForm" class="hidden">
         <h2 id="selectedDate"></h2>
         <div id="teacherList"></div>
-        <button onclick="saveAttendance()">저장</button>
+        <button class="btn" onclick="saveAttendance()">저장</button>
     </div>
 
     <script>
-        function generateCalendar() {
+        async function generateCalendar() {
             const calendar = document.getElementById('calendar');
             calendar.innerHTML = '';
-            
+
             const monthValue = document.getElementById('monthSelect').value;
             if (!monthValue) {
                 alert('월을 선택해주세요.');
                 return;
             }
-            
+
             const [year, month] = monthValue.split('-');
             const firstDay = new Date(year, month - 1, 1);
             const lastDay = new Date(year, month, 0);
             const startWeekDay = firstDay.getDay();
             const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-            
+
+            // 요일 헤더 추가
             dayNames.forEach(dayName => {
                 const dayHeader = document.createElement('div');
                 dayHeader.textContent = dayName;
@@ -65,84 +60,106 @@
                 dayHeader.classList.add('day-cell');
                 calendar.appendChild(dayHeader);
             });
-            
+
             for (let i = 0; i < startWeekDay; i++) {
                 const emptyCell = document.createElement('div');
                 emptyCell.classList.add('day-cell');
                 calendar.appendChild(emptyCell);
             }
-            
+
+            const response = await fetch(`https://supermax.kr/attendancehistory?year=${year}&month=${month}`);
+            const records = await response.json();
+            console.log(`✅ ${year}-${month} 출근 기록:`, records);
+
             for (let i = 1; i <= lastDay.getDate(); i++) {
                 const cell = document.createElement('div');
                 cell.classList.add('day-cell');
                 cell.textContent = i;
-                cell.onclick = () => openAttendanceForm(`${year}-${month.padStart(2, '0')}-${String(i).padStart(2, '0')}`);
+
+                const currentDate = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                const record = records.find(r => r.출근일 === currentDate);
+
+                if (record) {
+                    if (Number(record.출근) === 1) cell.classList.add('출근');
+                    if (Number(record.지각) === 1) cell.classList.add('지각');
+                    if (Number(record.휴무) === 1) cell.classList.add('휴무');
+                }
+
+                cell.onclick = () => openAttendanceForm(currentDate);
                 calendar.appendChild(cell);
             }
         }
-        
+
         async function openAttendanceForm(date) {
             document.getElementById('selectedDate').textContent = `${date} 출근 체크`;
             document.getElementById('attendanceForm').classList.remove('hidden');
 
             const response = await fetch('https://supermax.kr/teachers');
             const teachers = await response.json();
-            const attendanceResponse = await fetch(`https://supermax.kr/attendancehistory?date=${date}`);
-            const attendanceRecords = await attendanceResponse.json();
-            console.log(`📢 불러온 출근 기록:`, attendanceRecords);
-
             const listContainer = document.getElementById('teacherList');
             listContainer.innerHTML = '';
 
+            const recordsResponse = await fetch(`https://supermax.kr/attendancehistory?date=${date}`);
+            const records = await recordsResponse.json();
+
             teachers.forEach(teacher => {
-                const record = attendanceRecords.find(r => r.강사_id == teacher.id);
-                let 상태값 = "";
+                const record = records.find(r => r.강사_id == teacher.id);
+                let initialStatus = '';
 
                 if (record) {
-                    console.log(`✅ ${date}의 ${teacher.이름} 기록:`, record);
-                    if (Number(record.출근) === 1) 상태값 = "출근";
-                    else if (Number(record.지각) === 1) 상태값 = "지각";
-                    else if (Number(record.휴무) === 1) 상태값 = "휴무";
+                    if (record.출근) initialStatus = '출근';
+                    else if (record.지각) initialStatus = '지각';
+                    else if (record.휴무) initialStatus = '휴무';
                 }
 
                 const div = document.createElement('div');
                 div.innerHTML = `
                     <p>${teacher.이름} (${teacher.직급 || '직급 없음'})</p>
-                    <div class="status-container">
-                        <button class="status-btn 출근-btn ${상태값 === '출근' ? 'btn-selected' : ''}" onclick="selectStatus(this, '출근')" data-teacher-id="${teacher.id}">출근</button>
-                        <button class="status-btn 지각-btn ${상태값 === '지각' ? 'btn-selected' : ''}" onclick="selectStatus(this, '지각')" data-teacher-id="${teacher.id}">지각</button>
-                        <button class="status-btn 휴무-btn ${상태값 === '휴무' ? 'btn-selected' : ''}" onclick="selectStatus(this, '휴무')" data-teacher-id="${teacher.id}">휴무</button>
-                    </div>
+                    <button class="attendance-btn 출근-btn" data-teacher-id="${teacher.id}" data-status="출근" onclick="setAttendance(this)">출근</button>
+                    <button class="attendance-btn 지각-btn" data-teacher-id="${teacher.id}" data-status="지각" onclick="setAttendance(this)">지각</button>
+                    <button class="attendance-btn 휴무-btn" data-teacher-id="${teacher.id}" data-status="휴무" onclick="setAttendance(this)">휴무</button>
                 `;
                 listContainer.appendChild(div);
+
+                if (initialStatus) {
+                    div.querySelector(`[data-status="${initialStatus}"]`).style.opacity = "0.6";
+                }
             });
         }
-        
-        function selectStatus(button, status) {
-            const parent = button.parentNode;
-            parent.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('btn-selected'));
-            button.classList.add('btn-selected');
+
+        function setAttendance(button) {
+            const teacherId = button.getAttribute('data-teacher-id');
+            const buttons = document.querySelectorAll(`button[data-teacher-id="${teacherId}"]`);
+            buttons.forEach(btn => btn.style.opacity = "1");
+            button.style.opacity = "0.6";
         }
 
         async function saveAttendance() {
-            const selects = document.querySelectorAll('.btn-selected');
+            const selectedDate = document.getElementById('selectedDate').textContent.split(' ')[0];
             const attendanceData = [];
 
-            selects.forEach(button => {
-                const 상태 = button.textContent;
-                const 강사_id = button.getAttribute('data-teacher-id');
-                const 출근일 = document.getElementById('selectedDate').textContent.split(' ')[0];
-
-                attendanceData.push({ 강사_id, 출근일, 상태 });
+            document.querySelectorAll('.attendance-btn[style*="opacity: 0.6"]').forEach(btn => {
+                const 강사_id = btn.getAttribute('data-teacher-id');
+                const 상태 = btn.getAttribute('data-status');
+                attendanceData.push({ 강사_id, 출근일: selectedDate, 상태 });
             });
 
-            await fetch('https://supermax.kr/attendancecheck', {
+            if (attendanceData.length === 0) {
+                alert('출근 상태를 선택하세요.');
+                return;
+            }
+
+            const response = await fetch('https://supermax.kr/attendancecheckedit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(attendanceData)
             });
 
-            alert('✅ 출근 기록 저장 완료!');
+            const result = await response.json();
+            alert(result.message);
+
+            // ✅ 저장 후 달력 즉시 갱신
+            generateCalendar();
         }
     </script>
 </body>
