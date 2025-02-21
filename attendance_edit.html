@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출근 기록 수정</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <style>
+        body { font-size: 16px; }
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 20px; }
+        .day-cell { border: 1px solid #ccc; text-align: center; padding: 10px; cursor: pointer; }
+        .day-cell:hover { background-color: #f0f0f0; }
+        .center { text-align: center; }
+        .btn { margin-top: 10px; padding: 10px; font-size: 16px; }
+        .attendance-box { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1 class="center">출근 기록 수정</h1>
+    <div class="center">
+        <input type="month" id="monthSelect">
+        <button class="btn" onclick="generateCalendar()">달력 보기</button>
+    </div>
+    <div class="calendar" id="calendar"></div>
+    <div id="attendanceBox" class="attendance-box hidden">
+        <h3 id="selectedDate">날짜 선택 후 진행</h3>
+        <div id="teacherList"></div>
+        <button class="btn" onclick="saveAttendance()">저장하기</button>
+    </div>
+
+    <script>
+        let selectedDate = "";
+
+        function generateCalendar() {
+            const monthValue = document.getElementById('monthSelect').value;
+            if (!monthValue) {
+                alert('월을 선택해주세요.');
+                return;
+            }
+            
+            const [year, month] = monthValue.split('-');
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+            
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDay = new Date(year, month, 0);
+            
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('day-cell');
+                cell.textContent = i;
+                cell.onclick = () => fetchTeachers(`${year}-${month}-${String(i).padStart(2, '0')}`);
+                calendar.appendChild(cell);
+            }
+        }
+
+        async function fetchTeachers(date) {
+            selectedDate = date;
+            document.getElementById('selectedDate').textContent = `출근 기록 수정 - ${date}`;
+            document.getElementById('attendanceBox').classList.remove('hidden');
+            
+            const response = await fetch('https://supermax.kr/teachers');
+            const teachers = await response.json();
+            
+            const listContainer = document.getElementById('teacherList');
+            listContainer.innerHTML = '';
+            
+            teachers.forEach(teacher => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <p>${teacher.이름} (${teacher.직급 || '직급 없음'})</p>
+                    <select class="attendance-select" data-teacher-id="${teacher.id}">
+                        <option value="">출근 상태 선택</option>
+                        <option value="출근">출근</option>
+                        <option value="지각">지각</option>
+                        <option value="휴무">휴무</option>
+                    </select>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        async function saveAttendance() {
+            const selects = document.querySelectorAll('.attendance-select');
+            const attendanceData = [];
+
+            selects.forEach(select => {
+                const 상태 = select.value;
+                const 강사_id = select.getAttribute('data-teacher-id');
+
+                if (상태) {
+                    attendanceData.push({ 강사_id, 출근일: selectedDate, 상태 });
+                }
+            });
+
+            if (attendanceData.length === 0) {
+                alert('출근 상태를 선택하세요.');
+                return;
+            }
+
+            const response = await fetch('https://supermax.kr/attendancecheck', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(attendanceData)
+            });
+
+            const result = await response.json();
+            alert(result.message);
+        }
+    </script>
+</body>
+</html>
