@@ -9,7 +9,7 @@
         body { font-size: 16px; }
         select, input, button { font-size: 16px; padding: 5px; margin: 5px; }
         .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 20px; }
-        .day-cell { border: 1px solid #ccc; text-align: center; padding: 10px; }
+        .day-cell { border: 1px solid #ccc; text-align: center; padding: 10px; min-height: 50px; }
         .legend { margin-top: 10px; }
         .출근 { background-color: #D4EDDA; }
         .지각 { background-color: #FFF3CD; }
@@ -76,8 +76,9 @@
 
             const firstDay = new Date(year, month - 1, 1);
             const lastDay = new Date(year, month, 0);
+            const startWeekDay = firstDay.getDay();
 
-            const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 
             // 요일 헤더 추가
             dayNames.forEach(dayName => {
@@ -89,6 +90,13 @@
             });
 
             let 출근일수 = 0;
+
+            // 첫 주 시작 요일 맞추기 (빈 칸 추가)
+            for (let i = 0; i < startWeekDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.classList.add('day-cell');
+                calendar.appendChild(emptyCell);
+            }
 
             for (let i = 1; i <= lastDay.getDate(); i++) {
                 const date = new Date(year, month - 1, i);
@@ -113,7 +121,7 @@
                     } else if (record.지각 === 1) {
                         cell.classList.add('지각');
                         출근일수++;
-                    } else {
+                    } else if (record.휴무 === 1) {
                         cell.classList.add('휴무');
                     }
                 }
