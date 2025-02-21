@@ -61,6 +61,7 @@
                 calendar.appendChild(dayHeader);
             });
 
+            // 빈 칸 추가 (월 시작 요일 맞추기)
             for (let i = 0; i < startWeekDay; i++) {
                 const emptyCell = document.createElement('div');
                 emptyCell.classList.add('day-cell');
