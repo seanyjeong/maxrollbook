@@ -102,73 +102,74 @@
         }
 
         function renderCalendar(year, month, records) {
-            // 월 제목 업데이트
-            const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
-            document.getElementById('monthTitle').textContent = `${year}년 ${monthNames[parseInt(month) - 1]}`;
+    const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+    document.getElementById('monthTitle').textContent = `${year}년 ${monthNames[parseInt(month) - 1]}`;
 
-            const calendar = document.getElementById('calendar');
-            calendar.innerHTML = '';
+    const calendar = document.getElementById('calendar');
+    calendar.innerHTML = '';
 
-            const firstDay = new Date(year, month - 1, 1);
-            const lastDay = new Date(year, month, 0);
-            const startWeekDay = firstDay.getDay();
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
+    const startWeekDay = firstDay.getDay(); // 0(일)~6(토)
 
-            const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 
-            // 요일 헤더 추가
-            dayNames.forEach(dayName => {
-                const dayHeader = document.createElement('div');
-                dayHeader.textContent = dayName;
-                dayHeader.style.fontWeight = 'bold';
-                dayHeader.classList.add('day-cell');
-                calendar.appendChild(dayHeader);
-            });
+    // 🟢 요일 헤더 추가
+    dayNames.forEach(dayName => {
+        const dayHeader = document.createElement('div');
+        dayHeader.textContent = dayName;
+        dayHeader.style.fontWeight = 'bold';
+        dayHeader.classList.add('day-cell');
+        calendar.appendChild(dayHeader);
+    });
 
-            let 출근일수 = 0;
+    let 출근일수 = 0;
 
-            // 첫 주 시작 요일 맞추기 (빈 칸 추가)
-            for (let i = 0; i < startWeekDay; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.classList.add('day-cell');
-                calendar.appendChild(emptyCell);
+    // 🟢 첫 주 시작 요일 맞추기 (빈 칸 추가)
+    for (let i = 0; i < startWeekDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.classList.add('day-cell');
+        calendar.appendChild(emptyCell);
+    }
+
+    // 🟢 날짜 셀 추가
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('day-cell');
+        cell.textContent = i;
+
+        // 🟢 현재 날짜 (YYYY-MM-DD 형식)
+        const currentDate = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        
+        // 🟢 DB에서 가져온 출근일과 비교
+        const record = records.find(r => {
+            const recordDate = new Date(r.출근일);
+            const KSTrecordDate = new Date(recordDate.getTime() + (9 * 60 * 60 * 1000)); // 🟢 UTC -> KST 변환
+            const recordDateStr = KSTrecordDate.toISOString().split('T')[0]; // 🟢 YYYY-MM-DD 형태로 변환
+            
+            console.log(`🔍 비교: ${recordDateStr} vs ${currentDate}`);
+            return recordDateStr === currentDate;
+        });
+
+        // 🟢 출근 데이터 확인 후 색상 적용
+        if (record) {
+            console.log(`✅ ${currentDate}의 기록:`, record);
+            if (Number(record.출근) === 1) {
+                cell.classList.add('출근');
+                출근일수++;
+            } else if (Number(record.지각) === 1) {
+                cell.classList.add('지각');
+                출근일수++;
+            } else if (Number(record.휴무) === 1) {
+                cell.classList.add('휴무');
             }
-
-            // 날짜 셀 추가
-            for (let i = 1; i <= lastDay.getDate(); i++) {
-                const cell = document.createElement('div');
-                cell.classList.add('day-cell');
-                cell.textContent = i;
-
-                // 해당 날짜의 출근 기록 찾기
-                const currentDate = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                
-                // 날짜 비교를 위해 시간 부분을 제거하고 비교
-                const record = records.find(r => {
-                    const recordDate = new Date(r.출근일);
-                    const recordDateStr = recordDate.toISOString().split('T')[0];
-                    console.log(`비교: ${recordDateStr} vs ${currentDate}`);
-                    return recordDateStr === currentDate;
-                });
-
-                if (record) {
-                    console.log(`${currentDate}의 기록:`, record);
-                    // 숫자형으로 변환하여 비교
-                    if (Number(record.출근) === 1) {
-                        cell.classList.add('출근');
-                        출근일수++;
-                    } else if (Number(record.지각) === 1) {
-                        cell.classList.add('지각');
-                        출근일수++;
-                    } else if (Number(record.휴무) === 1) {
-                        cell.classList.add('휴무');
-                    }
-                }
-
-                calendar.appendChild(cell);
-            }
-
-            document.getElementById('workDaysCount').textContent = `출근일수: ${출근일수}일`;
         }
+
+        calendar.appendChild(cell);
+    }
+
+    document.getElementById('workDaysCount').textContent = `출근일수: ${출근일수}일`;
+}
 
         function calculateSalary() {
             const hourlyWage = parseFloat(document.getElementById('hourlyWage').value);
