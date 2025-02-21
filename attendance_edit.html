@@ -61,7 +61,8 @@ async function generateCalendar() {
 
     const attendanceMap = {};
     attendanceRecords.forEach(record => {
-        const 출근일 = record.출근일;
+        const 출근일 = new Date(record.출근일).toISOString().split('T')[0]; // ✅ 날짜 변환 (UTC → YYYY-MM-DD)
+        
         if (!attendanceMap[출근일]) {
             attendanceMap[출근일] = { 출근: 0, 지각: 0, 휴무: 0 };
         }
@@ -114,6 +115,7 @@ async function generateCalendar() {
         calendar.appendChild(cell);
     }
 }
+
 
 
         async function openAttendanceForm(date) {
