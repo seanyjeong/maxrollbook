@@ -15,14 +15,12 @@
         .input-container input { flex: 2; padding: 5px; }
         .payroll-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .payroll-table th, .payroll-table td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-        .signature { margin-top: 20px; font-size: 22px; font-weight: bold; } /* 직인 스타일 */
+        .signature { margin-top: 20px; font-size: 24px; font-weight: bold; } /* 직인 스타일 */
         
-        /* ✅ PDF 저장 시 보이지 않게 설정 */
-        .hidden-for-pdf { display: block; } /* 화면에서는 보임 */
-        .hide-in-pdf { display: none; } /* PDF에서는 숨김 */
-
+        /* ✅ PDF 저장 시 버튼 안 보이게 설정 */
+        .pdf-hidden { display: block; }
         @media print {
-            .hidden-for-pdf { display: none; } /* PDF 저장 시 숨김 */
+            .pdf-hidden { display: none; }
         }
         
         .button-container { margin-top: 20px; }
@@ -32,33 +30,35 @@
 
     <h1>일산맥스체대입시 급여명세서</h1>
 
+    <!-- ✅ 시급·일급·월급 입력란을 PDF 저장 범위 밖으로 이동 -->
+    <div class="pdf-hidden">
+        <div class="input-container">
+            <label for="hourlyRate">시급 (₩):</label>
+            <input type="number" id="hourlyRate" placeholder="예: 25000">
+        </div>
+
+        <div class="input-container">
+            <label for="dailyRate">일급 (₩):</label>
+            <input type="number" id="dailyRate" placeholder="예: 100000">
+        </div>
+
+        <div class="input-container">
+            <label for="monthlySalary">월급 (₩):</label>
+            <input type="number" id="monthlySalary" placeholder="예: 3000000">
+        </div>
+    </div>
+
     <div class="payroll-container" id="payroll-section">
         <h2 id="payroll-title">#강사이름 #월 급여명세서</h2>
 
         <div class="input-container">
             <label for="teacher">강사 이름:</label>
-            <select id="teacher" onchange="updateTitle(); toggleSalaryInputs();"></select>
+            <select id="teacher" onchange="updateTitle();"></select>
         </div>
 
         <div class="input-container">
             <label for="month">월 선택:</label>
             <input type="month" id="month" onchange="updateTitle()">
-        </div>
-
-        <!-- ✅ 시급·일급·월급 입력 가능 (PDF에서는 숨김) -->
-        <div class="input-container salary-input hidden-for-pdf" id="hourlyRateContainer">
-            <label for="hourlyRate">시급 (₩):</label>
-            <input type="number" id="hourlyRate" placeholder="예: 25000">
-        </div>
-
-        <div class="input-container salary-input hidden-for-pdf" id="dailyRateContainer">
-            <label for="dailyRate">일급 (₩):</label>
-            <input type="number" id="dailyRate" placeholder="예: 100000">
-        </div>
-
-        <div class="input-container salary-input hidden-for-pdf" id="monthlySalaryContainer">
-            <label for="monthlySalary">월급 (₩):</label>
-            <input type="number" id="monthlySalary" placeholder="예: 3000000">
         </div>
 
         <table class="payroll-table">
@@ -78,12 +78,12 @@
 
         <!-- ✅ 강조된 직인 스타일 -->
         <div class="signature">맥스체대입시 일산교육원장</div>
+    </div>
 
-        <!-- ✅ 버튼도 PDF 저장 시 보이지 않게 설정 -->
-        <div class="button-container hidden-for-pdf">
-            <button onclick="calculateSalary()">급여 계산</button>
-            <button onclick="downloadPDF()">PDF 저장</button>
-        </div>
+    <!-- ✅ PDF 저장 시 버튼 안 보이도록 설정 -->
+    <div class="button-container pdf-hidden">
+        <button onclick="calculateSalary()">급여 계산</button>
+        <button onclick="downloadPDF()">PDF 저장</button>
     </div>
 
     <script>
@@ -105,13 +105,6 @@
             const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
             const monthValue = document.getElementById('month').value.split("-")[1] || "월";
             document.getElementById('payroll-title').textContent = `#${teacherName} #${monthValue}월 급여명세서`;
-        }
-
-        function toggleSalaryInputs() {
-            const role = document.getElementById('teacher').selectedOptions[0].dataset.role;
-            document.getElementById('hourlyRateContainer').classList.toggle('hidden-for-pdf', role === "팀장");
-            document.getElementById('dailyRateContainer').classList.toggle('hidden-for-pdf', role === "팀장");
-            document.getElementById('monthlySalaryContainer').classList.toggle('hidden-for-pdf', role !== "팀장");
         }
 
         async function calculateSalary() {
@@ -142,17 +135,30 @@
             document.getElementById('netSalary').textContent = `₩${netSalary.toLocaleString()}`;
         }
 
-        async function downloadPDF() {
-            const payrollSection = document.getElementById('payroll-section');
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
+async function downloadPDF() {
+    const payrollSection = document.getElementById('payroll-section');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
 
-            html2canvas(payrollSection).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                pdf.addImage(imgData, 'PNG', 10, 10, 180, 0);
-                pdf.save('급여명세서.pdf');
-            });
-        }
+    // ✅ 선택된 강사 이름 가져오기
+    const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
+
+    // ✅ 선택된 년월 가져오기 (YYYYMM 형식)
+    const monthValue = document.getElementById('month').value; // ex) "2025-03"
+    if (!monthValue || !teacherName) {
+        alert("강사와 월을 선택해주세요!");
+        return;
+    }
+    const [year, month] = monthValue.split('-');
+    const fileName = `${year}${month}_${teacherName}.pdf`; // ex) "202503_홍길동.pdf"
+
+    html2canvas(payrollSection).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 10, 10, 180, 0);
+        pdf.save(fileName);
+    });
+}
+
 
         loadTeachers();
     </script>
