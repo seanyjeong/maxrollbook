@@ -387,45 +387,33 @@ async function downloadPDF() {
 
         // 4. PDF 설정 (A4 가로)
         const pdf = new jsPDF('landscape', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-
-        // 5. 이미지 크기 계산
-        const imgWidth = pdfWidth - 20; // 좌우 10mm 여백
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        
+        // 5. 이미지 데이터 준비
+        const imgData = canvas.toDataURL('image/png', 1.0);
+        
+        // 6. 이미지 크기 계산
+        const imgWidth = pageWidth - 20;  // 좌우 10mm 여백
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        // 6. 여러 페이지로 분할
-        let remainingHeight = imgHeight;
+        
+        // 7. 여러 페이지로 분할
+        let heightLeft = imgHeight;
         let position = 0;
-        let pageNumber = 1;
-
-        while (remainingHeight > 0) {
-            // 현재 페이지에 들어갈 수 있는 높이 계산
-            const currentPageHeight = Math.min(pdfHeight - 20, remainingHeight); // 상하 10mm 여백
-
-            pdf.addImage(
-                canvas,
-                'PNG',
-                10, // 왼쪽 여백
-                pageNumber === 1 ? 10 : 0, // 첫 페이지만 상단 여백
-                imgWidth,
-                imgHeight,
-                null,
-                'FAST',
-                0,
-                position // 이미지 시작 위치
-            );
-
-            remainingHeight -= currentPageHeight;
-            position -= pdfHeight;
-
-            if (remainingHeight > 0) {
-                pdf.addPage();
-                pageNumber++;
-            }
+        
+        // 첫 페이지
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        // 추가 페이지
+        while (heightLeft > 0) {
+            position = -pageHeight * (imgHeight / heightLeft);
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
         }
 
-        // 7. 파일명 설정 및 저장
+        // 8. 파일명 설정 및 저장
         const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
         const monthValue = document.getElementById('month').value;
         
@@ -442,7 +430,7 @@ async function downloadPDF() {
         console.error('PDF 생성 중 오류:', error);
         alert('PDF 생성 중 오류가 발생했습니다.');
     } finally {
-        // 8. 원래 스타일로 복구
+        // 9. 원래 스타일로 복구
         Object.assign(payrollSection.style, originalStyles);
     }
 }
