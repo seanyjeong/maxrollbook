@@ -360,91 +360,92 @@ async function downloadPDF() {
     const payrollSection = document.getElementById('payroll-section');
     const { jsPDF } = window.jspdf;
 
-    // 원본 스타일 저장
-    const originalStyles = {
-        width: payrollSection.style.width,
-        height: payrollSection.style.height,
-        transform: payrollSection.style.transform,
-        position: payrollSection.style.position,
-        background: payrollSection.style.background
-    };
-
     try {
-        // PDF 생성 전 스타일 임시 적용
+        // 1. 캔버스 생성 전 준비
+        const originalStyles = {
+            width: payrollSection.style.width,
+            height: payrollSection.style.height,
+            transform: payrollSection.style.transform,
+            position: payrollSection.style.position
+        };
+
+        // 2. PDF 생성을 위한 스타일 적용
         payrollSection.style.width = '1000px';
         payrollSection.style.height = 'auto';
         payrollSection.style.transform = 'none';
         payrollSection.style.position = 'relative';
-        payrollSection.style.background = 'white';
 
-        // 테이블 스타일 임시 조정
-        const tables = payrollSection.getElementsByClassName('payroll-table');
-        for (let table of tables) {
-            table.style.pageBreakInside = 'avoid';
-            table.style.width = '100%';
-        }
-
+        // 3. 캔버스 생성
         const canvas = await html2canvas(payrollSection, {
             scale: 2,
             useCORS: true,
             logging: false,
             letterRendering: true,
             allowTaint: true,
-            backgroundColor: '#ffffff',
-            windowWidth: 1000,
-            height: payrollSection.scrollHeight,
-            width: 1000,
-            x: 0,
-            y: 0
+            backgroundColor: '#ffffff'
         });
 
-        // PDF 설정 (A4 가로 방향)
-        const pdf = new jsPDF({
-            orientation: 'landscape',
-            unit: 'mm',
-            format: 'a4'
-        });
+        // 4. PDF 설정 (A4 가로)
+        const pdf = new jsPDF('landscape', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        // 이미지 크기 계산 (A4 가로 크기에 맞춤)
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10; // 여백
-
-        // 이미지 비율 유지하면서 크기 조정
-        const imgWidth = pageWidth - (margin * 2);
+        // 5. 이미지 크기 계산
+        const imgWidth = pdfWidth - 20; // 좌우 10mm 여백
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        // 이미지를 PDF에 추가
-        pdf.addImage(
-            canvas.toDataURL('image/png', 1.0),
-            'PNG',
-            margin,
-            margin,
-            imgWidth,
-            imgHeight
-        );
+        // 6. 여러 페이지로 분할
+        let remainingHeight = imgHeight;
+        let position = 0;
+        let pageNumber = 1;
 
-        // 파일명 설정 및 저장
+        while (remainingHeight > 0) {
+            // 현재 페이지에 들어갈 수 있는 높이 계산
+            const currentPageHeight = Math.min(pdfHeight - 20, remainingHeight); // 상하 10mm 여백
+
+            pdf.addImage(
+                canvas,
+                'PNG',
+                10, // 왼쪽 여백
+                pageNumber === 1 ? 10 : 0, // 첫 페이지만 상단 여백
+                imgWidth,
+                imgHeight,
+                null,
+                'FAST',
+                0,
+                position // 이미지 시작 위치
+            );
+
+            remainingHeight -= currentPageHeight;
+            position -= pdfHeight;
+
+            if (remainingHeight > 0) {
+                pdf.addPage();
+                pageNumber++;
+            }
+        }
+
+        // 7. 파일명 설정 및 저장
         const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
         const monthValue = document.getElementById('month').value;
+        
         if (!monthValue || !teacherName) {
             alert("강사와 월을 선택해주세요!");
             return;
         }
+
         const [year, month] = monthValue.split('-');
         const fileName = `${year}${month}_${teacherName}_급여명세서.pdf`;
-
         pdf.save(fileName);
 
     } catch (error) {
         console.error('PDF 생성 중 오류:', error);
         alert('PDF 생성 중 오류가 발생했습니다.');
     } finally {
-        // 원래 스타일로 복구
+        // 8. 원래 스타일로 복구
         Object.assign(payrollSection.style, originalStyles);
     }
 }
-
         document.addEventListener("DOMContentLoaded", loadTeachers);
     </script>
     <footer style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
