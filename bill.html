@@ -16,6 +16,53 @@
         .payroll-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .payroll-table th, .payroll-table td { border: 1px solid #ccc; padding: 10px; text-align: center; }
         .signature { margin-top: 20px; font-size: 24px; font-weight: bold; }
+
+            /* PDF 출력용 스타일 추가 */
+    @media print {
+        .payroll-container {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 10px;
+        }
+
+        /* 테이블 자동 크기 조절 */
+        .payroll-table {
+            width: 100%;
+            table-layout: fixed;
+            font-size: 0.9em;
+        }
+
+        /* 셀 내용 자동 크기 조절 */
+        .payroll-table td, .payroll-table th {
+            padding: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 금액 셀 특별 처리 */
+        .payroll-table td.amount {
+            font-size: 0.85em;
+            font-family: monospace;  /* 숫자 간격 일정하게 */
+        }
+
+        /* 헤더 크기 조절 */
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.3em; }
+        h3 { font-size: 1.1em; }
+
+        /* 서명 크기 조절 */
+        .signature {
+            font-size: 1.2em;
+            margin-top: 15px;
+        }
+    }
+
+    /* 동적 폰트 크기 조절을 위한 클래스 */
+    .auto-size {
+        font-size: clamp(0.7em, 2vw, 1em);
+    }
     </style>
 </head>
 <body>
@@ -76,26 +123,26 @@
         <h3>출근 일자</h3>
         <p id="totalAttendanceDisplay">총 출근일수: 0일</p>
 
-        <table class="payroll-table">
-            <tr>
-                <th>출근일수</th>
-                <th>총 근무시간</th>
-                <th>총 급여</th>
-                <th>세금 (3.3%)</th>
-                <th>인센티브1</th>
-                <th>인센티브2</th>
-                <th>실수령액</th>
-            </tr>
-            <tr>
-                <td id="attendanceDays">0</td>
-                <td id="totalHours">0시간</td>
-                <td id="totalSalary">₩0</td>
-                <td id="taxAmount">₩0</td>
-                <td id="incentive1Amount">₩0</td>
-                <td id="incentive2Amount">₩0</td>
-                <td id="netSalary">₩0</td>
-            </tr>
-        </table>
+<table class="payroll-table">
+    <tr>
+        <th>출근일수</th>
+        <th>총 근무시간</th>
+        <th>총 급여</th>
+        <th>세금 (3.3%)</th>
+        <th>인센티브1</th>
+        <th>인센티브2</th>
+        <th>실수령액</th>
+    </tr>
+    <tr>
+        <td id="attendanceDays" class="auto-size">0</td>
+        <td id="totalHours" class="auto-size">0시간</td>
+        <td id="totalSalary" class="amount auto-size">₩0</td>
+        <td id="taxAmount" class="amount auto-size">₩0</td>
+        <td id="incentive1Amount" class="amount auto-size">₩0</td>
+        <td id="incentive2Amount" class="amount auto-size">₩0</td>
+        <td id="netSalary" class="amount auto-size">₩0</td>
+    </tr>
+</table>
 
         <h3>출근 상세 기록</h3>
         <table class="payroll-table">
@@ -284,26 +331,59 @@
             }
         }
 
-        async function downloadPDF() {
-            const payrollSection = document.getElementById('payroll-section');
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
+async function downloadPDF() {
+    const payrollSection = document.getElementById('payroll-section');
+    const { jsPDF } = window.jspdf;
 
-            const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
-            const monthValue = document.getElementById('month').value;
-            if (!monthValue || !teacherName) {
-                alert("강사와 월을 선택해주세요!");
-                return;
-            }
-            const [year, month] = monthValue.split('-');
-            const fileName = `${year}${month}_${teacherName}.pdf`;
+    // PDF 크기와 방향 설정 (landscape로 변경)
+    const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+    });
 
-            html2canvas(payrollSection).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                pdf.addImage(imgData, 'PNG', 10, 10, 180, 0);
-                pdf.save(fileName);
-            });
-        }
+    const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
+    const monthValue = document.getElementById('month').value;
+    
+    if (!monthValue || !teacherName) {
+        alert("강사와 월을 선택해주세요!");
+        return;
+    }
+
+    const [year, month] = monthValue.split('-');
+    const fileName = `${year}${month}_${teacherName}.pdf`;
+
+    // HTML을 캔버스로 변환하기 전에 임시로 스타일 적용
+    const originalStyle = payrollSection.style.width;
+    payrollSection.style.width = '1000px';  // 더 넓은 너비로 설정
+
+    try {
+        const canvas = await html2canvas(payrollSection, {
+            scale: 2,  // 해상도 향상
+            useCORS: true,
+            logging: false,
+            letterRendering: true,
+            allowTaint: true
+        });
+
+        // 이미지 크기 계산
+        const imgWidth = 287;  // A4 가로 크기
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        // 이미지를 PDF에 추가
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
+
+        // PDF 저장
+        pdf.save(fileName);
+    } catch (error) {
+        console.error('PDF 생성 중 오류:', error);
+        alert('PDF 생성 중 오류가 발생했습니다.');
+    } finally {
+        // 원래 스타일로 복구
+        payrollSection.style.width = originalStyle;
+    }
+}
 
         document.addEventListener("DOMContentLoaded", loadTeachers);
     </script>
