@@ -20,11 +20,36 @@
             /* PDF 출력용 스타일 추가 */
     @media print {
         .payroll-container {
-            width: 100%;
-            max-width: none;
-            margin: 0;
-            padding: 10px;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 10px !important;
+            transform: none !important;
         }
+        
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .payroll-table {
+            page-break-inside: avoid;
+            margin-bottom: 20px;
+        }
+        
+        /* 테이블 셀 크기 조정 */
+        .payroll-table th,
+        .payroll-table td {
+            padding: 5px !important;
+            font-size: 12px !important;
+            white-space: nowrap;
+        }
+    }
+
+    /* 컨테이너 최소 높이 설정 */
+    #payroll-section {
+        min-height: 600px;
+    }
 
         /* 테이블 자동 크기 조절 */
         .payroll-table {
@@ -335,53 +360,88 @@ async function downloadPDF() {
     const payrollSection = document.getElementById('payroll-section');
     const { jsPDF } = window.jspdf;
 
-    // PDF 크기와 방향 설정 (landscape로 변경)
-    const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-    });
-
-    const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
-    const monthValue = document.getElementById('month').value;
-    
-    if (!monthValue || !teacherName) {
-        alert("강사와 월을 선택해주세요!");
-        return;
-    }
-
-    const [year, month] = monthValue.split('-');
-    const fileName = `${year}${month}_${teacherName}.pdf`;
-
-    // HTML을 캔버스로 변환하기 전에 임시로 스타일 적용
-    const originalStyle = payrollSection.style.width;
-    payrollSection.style.width = '1000px';  // 더 넓은 너비로 설정
+    // 원본 스타일 저장
+    const originalStyles = {
+        width: payrollSection.style.width,
+        height: payrollSection.style.height,
+        transform: payrollSection.style.transform,
+        position: payrollSection.style.position,
+        background: payrollSection.style.background
+    };
 
     try {
+        // PDF 생성 전 스타일 임시 적용
+        payrollSection.style.width = '1000px';
+        payrollSection.style.height = 'auto';
+        payrollSection.style.transform = 'none';
+        payrollSection.style.position = 'relative';
+        payrollSection.style.background = 'white';
+
+        // 테이블 스타일 임시 조정
+        const tables = payrollSection.getElementsByClassName('payroll-table');
+        for (let table of tables) {
+            table.style.pageBreakInside = 'avoid';
+            table.style.width = '100%';
+        }
+
         const canvas = await html2canvas(payrollSection, {
-            scale: 2,  // 해상도 향상
+            scale: 2,
             useCORS: true,
             logging: false,
             letterRendering: true,
-            allowTaint: true
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            windowWidth: 1000,
+            height: payrollSection.scrollHeight,
+            width: 1000,
+            x: 0,
+            y: 0
         });
 
-        // 이미지 크기 계산
-        const imgWidth = 287;  // A4 가로 크기
+        // PDF 설정 (A4 가로 방향)
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        // 이미지 크기 계산 (A4 가로 크기에 맞춤)
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10; // 여백
+
+        // 이미지 비율 유지하면서 크기 조정
+        const imgWidth = pageWidth - (margin * 2);
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
         // 이미지를 PDF에 추가
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
+        pdf.addImage(
+            canvas.toDataURL('image/png', 1.0),
+            'PNG',
+            margin,
+            margin,
+            imgWidth,
+            imgHeight
+        );
 
-        // PDF 저장
+        // 파일명 설정 및 저장
+        const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
+        const monthValue = document.getElementById('month').value;
+        if (!monthValue || !teacherName) {
+            alert("강사와 월을 선택해주세요!");
+            return;
+        }
+        const [year, month] = monthValue.split('-');
+        const fileName = `${year}${month}_${teacherName}_급여명세서.pdf`;
+
         pdf.save(fileName);
+
     } catch (error) {
         console.error('PDF 생성 중 오류:', error);
         alert('PDF 생성 중 오류가 발생했습니다.');
     } finally {
         // 원래 스타일로 복구
-        payrollSection.style.width = originalStyle;
+        Object.assign(payrollSection.style, originalStyles);
     }
 }
 
