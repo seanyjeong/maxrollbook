@@ -356,84 +356,26 @@
             }
         }
 
-async function downloadPDF() {
-    const payrollSection = document.getElementById('payroll-section');
-    const { jsPDF } = window.jspdf;
+        async function downloadPDF() {
+            const payrollSection = document.getElementById('payroll-section');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
 
-    try {
-        // 1. 캔버스 생성 전 준비
-        const originalStyles = {
-            width: payrollSection.style.width,
-            height: payrollSection.style.height,
-            transform: payrollSection.style.transform,
-            position: payrollSection.style.position
-        };
+            const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
+            const monthValue = document.getElementById('month').value;
+            if (!monthValue || !teacherName) {
+                alert("강사와 월을 선택해주세요!");
+                return;
+            }
+            const [year, month] = monthValue.split('-');
+            const fileName = `${year}${month}_${teacherName}.pdf`;
 
-        // 2. PDF 생성을 위한 스타일 적용
-        payrollSection.style.width = '1000px';
-        payrollSection.style.height = 'auto';
-        payrollSection.style.transform = 'none';
-        payrollSection.style.position = 'relative';
-
-        // 3. 캔버스 생성
-        const canvas = await html2canvas(payrollSection, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            letterRendering: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff'
-        });
-
-        // 4. PDF 설정 (A4 가로)
-        const pdf = new jsPDF('landscape', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        
-        // 5. 이미지 데이터 준비
-        const imgData = canvas.toDataURL('image/png', 1.0);
-        
-        // 6. 이미지 크기 계산
-        const imgWidth = pageWidth - 20;  // 좌우 10mm 여백
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        // 7. 여러 페이지로 분할
-        let heightLeft = imgHeight;
-        let position = 0;
-        
-        // 첫 페이지
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        
-        // 추가 페이지
-        while (heightLeft > 0) {
-            position = -pageHeight * (imgHeight / heightLeft);
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
+            html2canvas(payrollSection).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                pdf.addImage(imgData, 'PNG', 10, 10, 180, 0);
+                pdf.save(fileName);
+            });
         }
-
-        // 8. 파일명 설정 및 저장
-        const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
-        const monthValue = document.getElementById('month').value;
-        
-        if (!monthValue || !teacherName) {
-            alert("강사와 월을 선택해주세요!");
-            return;
-        }
-
-        const [year, month] = monthValue.split('-');
-        const fileName = `${year}${month}_${teacherName}_급여명세서.pdf`;
-        pdf.save(fileName);
-
-    } catch (error) {
-        console.error('PDF 생성 중 오류:', error);
-        alert('PDF 생성 중 오류가 발생했습니다.');
-    } finally {
-        // 9. 원래 스타일로 복구
-        Object.assign(payrollSection.style, originalStyles);
-    }
-}
         document.addEventListener("DOMContentLoaded", loadTeachers);
     </script>
     <footer style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
