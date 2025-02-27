@@ -19,7 +19,6 @@
     </style>
 </head>
 <body>
-
     <h1>일산 맥스체대입시 급여명세서</h1>
 
     <div class="input-container">
@@ -47,6 +46,16 @@
     </div>
 
     <div class="input-container">
+        <label for="incentive1">인센티브1 (신규학생 수):</label>
+        <input type="number" id="incentive1" placeholder="신규학생 수 입력">
+    </div>
+
+    <div class="input-container">
+        <label for="incentive2">인센티브2 (기타 금액):</label>
+        <input type="number" id="incentive2" placeholder="기타 인센티브 금액">
+    </div>
+
+    <div class="input-container">
         <label>세금 적용 (3.3%)</label>
         <input type="checkbox" id="applyTax">
     </div>
@@ -65,8 +74,7 @@
         </div>
 
         <h3>출근 일자</h3>
-<p id="totalAttendanceDisplay">총 출근일수: 0일</p>  <!-- ✅ 이 부분이 없으면 추가해야 함 -->
-
+        <p id="totalAttendanceDisplay">총 출근일수: 0일</p>
 
         <table class="payroll-table">
             <tr>
@@ -74,6 +82,8 @@
                 <th>총 근무시간</th>
                 <th>총 급여</th>
                 <th>세금 (3.3%)</th>
+                <th>인센티브1</th>
+                <th>인센티브2</th>
                 <th>실수령액</th>
             </tr>
             <tr>
@@ -81,6 +91,8 @@
                 <td id="totalHours">0시간</td>
                 <td id="totalSalary">₩0</td>
                 <td id="taxAmount">₩0</td>
+                <td id="incentive1Amount">₩0</td>
+                <td id="incentive2Amount">₩0</td>
                 <td id="netSalary">₩0</td>
             </tr>
         </table>
@@ -102,227 +114,182 @@
         <div class="signature">맥스체대입시 일산교육원장</div>
     </div>
 
-<button onclick="calculateSalary()" style="margin-top: 10px;">급여 계산</button>
-<button onclick="downloadPDF()" style="margin-top: 10px;">PDF 저장</button>
-<button onclick="confirmSalary()" style="margin-top: 10px;">급여 확정</button>
+    <button onclick="calculateSalary()" style="margin-top: 10px;">급여 계산</button>
+    <button onclick="downloadPDF()" style="margin-top: 10px;">PDF 저장</button>
+    <button onclick="confirmSalary()" style="margin-top: 10px;">급여 확정</button>
 
-    
     <script>
-async function loadTeachers() {
-    console.log("📢 강사 목록 로드 시작");
-    
-    try {
-        const response = await fetch('https://supermax.kr/teachers');
-        const teachers = await response.json();
-
-        console.log("✅ 강사 목록 응답:", teachers);  // 📢 API 응답 확인
-
-        const teacherSelect = document.getElementById('teacher');
-
-        // ✅ 강사 목록이 있으면 `<select>` 안에 옵션 추가
-        teacherSelect.innerHTML = teachers.map(teacher => 
-            `<option value="${teacher.id}">${teacher.이름} (${teacher.직급 || '강사'})</option>`
-        ).join('');
-
-        console.log("📢 강사 목록 로드 완료");
-        updateTitle();  // ✅ 강사 선택 후 제목 업데이트
-
-    } catch (error) {
-        console.error("❌ 강사 목록 불러오기 실패:", error);
-    }
-}
-
-// ✅ DOM이 완전히 로드된 후 실행
-document.addEventListener("DOMContentLoaded", loadTeachers);
-
-
- async function updateTitle() {
-    const teacherSelect = document.getElementById('teacher');
-
-    if (!teacherSelect || teacherSelect.selectedIndex === -1) return;
-
-    const teacherName = teacherSelect.selectedOptions[0].text.split(" ")[0];
-    const monthValue = document.getElementById('month').value.split("-")[1] || "월";
-    document.getElementById('payroll-title').textContent = `#${teacherName} #${monthValue}월 급여명세서`;
-
-    // ✅ 강사와 월 선택 시 급여 데이터 자동 로드
-    await loadSalaryData();
-}
-
-async function loadSalaryData() {
-    const teacherId = document.getElementById('teacher').value;
-    const monthValue = document.getElementById('month').value;
-    if (!teacherId || !monthValue) return;
-
-    const [year, month] = monthValue.split('-');
-    const response = await fetch(`https://supermax.kr/getSalary?year=${year}&month=${month}&teacherId=${teacherId}`);
-
-    if (!response.ok) {
-        document.getElementById('applyTax').checked = false; // 기본값 false
-        return;
-    }
-
-    const salaryData = await response.json();
-    console.log("✅ 급여 정보 불러오기:", salaryData);
-
-    document.getElementById('salaryType').value = salaryData.급여방식;
-    document.getElementById('hourlyRate').value = salaryData.시급 || '';
-    document.getElementById('dailyRate').value = salaryData.일급 || '';
-    document.getElementById('monthlySalary').value = salaryData.월급 || '';
-    
-    // ✅ 세금 체크박스 반영
-    document.getElementById('applyTax').checked = salaryData.applyTax || false;
-
-
-
-    calculateSalary();
-}
-
-
-
-let totalDays = 0;  // ✅ 출근일수 전역 변수
-let totalHours = 0; // ✅ 총 근무시간 전역 변수
-
-async function calculateSalary() {
-    const teacherId = document.getElementById('teacher').value;
-    const monthValue = document.getElementById('month').value;
-    const salaryType = document.getElementById('salaryType').value;
-    const hourlyRate = parseFloat(document.getElementById('hourlyRate').value) || 0;
-    const dailyRate = parseFloat(document.getElementById('dailyRate').value) || 0;
-    const monthlySalary = parseFloat(document.getElementById('monthlySalary').value) || 0;
-    const applyTax = document.getElementById('applyTax').checked;
-
-    if (!teacherId || !monthValue) {
-        alert('강사 및 월을 선택해주세요.');
-        return;
-    }
-
-    const [year, month] = monthValue.split('-');
-    const response = await fetch(`https://supermax.kr/attendancehistory_monthly?year=${year}&month=${month}`);
-    const attendanceRecords = await response.json();
-
-    totalHours = 0;  // ✅ 총 근무시간 초기화
-    totalDays = 0;   // ✅ 총 출근일수 초기화
-
-    const tableBody = document.getElementById('attendanceTable');
-    tableBody.innerHTML = "";
-
-    attendanceRecords.forEach(record => {
-        if (record.강사_id == teacherId && (record.출근 === 1 || record.지각 === 1)) {
-            totalDays++; 
-
-            const dateObj = new Date(record.출근일);
-            const kstDate = new Date(dateObj.getTime() + (9 * 60 * 60 * 1000)); // 한국 시간 변환
-            const formattedDate = kstDate.toISOString().split('T')[0];
-            const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][kstDate.getDay()];
-
-            const workHours = record.근무시간 !== undefined ? record.근무시간 : 0;
-            totalHours += workHours; // ✅ 총 근무시간 누적
-
-            const row = document.createElement('tr');
-            row.innerHTML = `<td>${formattedDate}</td><td>${dayOfWeek}</td><td>${workHours}시간</td>`;
-            tableBody.appendChild(row);
+        async function loadTeachers() {
+            console.log("📢 강사 목록 로드 시작");
+            try {
+                const response = await fetch('https://supermax.kr/teachers');
+                const teachers = await response.json();
+                console.log("✅ 강사 목록 응답:", teachers);
+                const teacherSelect = document.getElementById('teacher');
+                teacherSelect.innerHTML = teachers.map(teacher => 
+                    `<option value="${teacher.id}">${teacher.이름} (${teacher.직급 || '강사'})</option>`
+                ).join('');
+                console.log("📢 강사 목록 로드 완료");
+                updateTitle();
+            } catch (error) {
+                console.error("❌ 강사 목록 불러오기 실패:", error);
+            }
         }
-    });
 
-    document.getElementById('totalAttendanceDisplay').textContent = `총 출근일수: ${totalDays}일`;
+        async function updateTitle() {
+            const teacherSelect = document.getElementById('teacher');
+            if (!teacherSelect || teacherSelect.selectedIndex === -1) return;
+            const teacherName = teacherSelect.selectedOptions[0].text.split(" ")[0];
+            const monthValue = document.getElementById('month').value.split("-")[1] || "월";
+            document.getElementById('payroll-title').textContent = `#${teacherName} #${monthValue}월 급여명세서`;
+            await loadSalaryData();
+        }
 
-    let totalSalary = salaryType === "hourly" ? totalHours * hourlyRate :
-                      salaryType === "daily" ? totalDays * dailyRate :
-                      monthlySalary;
+        async function loadSalaryData() {
+            const teacherId = document.getElementById('teacher').value;
+            const monthValue = document.getElementById('month').value;
+            if (!teacherId || !monthValue) return;
 
-    let taxAmount = applyTax ? totalSalary * 0.033 : 0;
-    let netSalary = totalSalary - taxAmount;
+            const [year, month] = monthValue.split('-');
+            const response = await fetch(`https://supermax.kr/getSalary?year=${year}&month=${month}&teacherId=${teacherId}`);
 
-    netSalary = Math.floor(netSalary / 10) * 10; // ✅ 10원 단위 절삭
+            if (!response.ok) {
+                document.getElementById('applyTax').checked = false;
+                document.getElementById('incentive1').value = '';
+                document.getElementById('incentive2').value = '';
+                return;
+            }
 
-    document.getElementById('attendanceDays').textContent = totalDays;
-    document.getElementById('totalHours').textContent = `${totalHours}시간`;
-    document.getElementById('totalSalary').textContent = `₩${totalSalary.toLocaleString()}`;
-    document.getElementById('taxAmount').textContent = `₩${taxAmount.toLocaleString()}`;
-    document.getElementById('netSalary').textContent = `₩${netSalary.toLocaleString()}`;
-}
+            const salaryData = await response.json();
+            console.log("✅ 급여 정보 불러오기:", salaryData);
 
+            document.getElementById('salaryType').value = salaryData.급여방식;
+            document.getElementById('hourlyRate').value = salaryData.시급 || '';
+            document.getElementById('dailyRate').value = salaryData.일급 || '';
+            document.getElementById('monthlySalary').value = salaryData.월급 || '';
+            document.getElementById('applyTax').checked = salaryData.applyTax || false;
+            document.getElementById('incentive1').value = salaryData.인센티브1 || '';
+            document.getElementById('incentive2').value = salaryData.인센티브2 || '';
 
+            calculateSalary();
+        }
 
+        async function calculateSalary() {
+            const teacherId = document.getElementById('teacher').value;
+            const monthValue = document.getElementById('month').value;
+            const salaryType = document.getElementById('salaryType').value;
+            const hourlyRate = parseFloat(document.getElementById('hourlyRate').value) || 0;
+            const dailyRate = parseFloat(document.getElementById('dailyRate').value) || 0;
+            const monthlySalary = parseFloat(document.getElementById('monthlySalary').value) || 0;
+            const applyTax = document.getElementById('applyTax').checked;
+            const incentive1Count = parseInt(document.getElementById('incentive1').value) || 0;
+            const incentive2Amount = parseFloat(document.getElementById('incentive2').value) || 0;
 
+            if (!teacherId || !monthValue) {
+                alert('강사 및 월을 선택해주세요.');
+                return;
+            }
 
-            // 총 출근일수 업데이트
-            document.getElementById('totalAttendanceDisplay').textContent = "총 출근일수: " + attendanceDays.length + "일";
+            const [year, month] = monthValue.split('-');
+            const response = await fetch(`https://supermax.kr/attendancehistory_monthly?year=${year}&month=${month}`);
+            const attendanceRecords = await response.json();
 
-            // HTML 테이블에 출근 날짜 추가
-            const tableBody = document.getElementById('attendanceDatesTable');
+            let totalHours = 0;
+            let totalDays = 0;
+
+            const tableBody = document.getElementById('attendanceTable');
             tableBody.innerHTML = "";
 
-            if (attendanceDays.length > 0) {
-                attendanceDays.forEach(day => {
+            attendanceRecords.forEach(record => {
+                if (record.강사_id == teacherId && (record.출근 === 1 || record.지각 === 1)) {
+                    totalDays++;
+                    const dateObj = new Date(record.출근일);
+                    const kstDate = new Date(dateObj.getTime() + (9 * 60 * 60 * 1000));
+                    const formattedDate = kstDate.toISOString().split('T')[0];
+                    const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][kstDate.getDay()];
+                    const workHours = record.근무시간 !== undefined ? record.근무시간 : 0;
+                    totalHours += workHours;
+
                     const row = document.createElement('tr');
-                    row.innerHTML = `<td>${day.date}</td><td>${day.day}</td>`;
+                    row.innerHTML = `<td>${formattedDate}</td><td>${dayOfWeek}</td><td>${workHours}시간</td>`;
                     tableBody.appendChild(row);
-                });
-            } else {
-                tableBody.innerHTML = `<tr><td colspan="2">출근 기록 없음</td></tr>`;
+                }
+            });
+
+            document.getElementById('totalAttendanceDisplay').textContent = `총 출근일수: ${totalDays}일`;
+
+            const incentive1Amount = incentive1Count * 100000;
+            let totalSalary = salaryType === "hourly" ? totalHours * hourlyRate :
+                          salaryType === "daily" ? totalDays * dailyRate :
+                          monthlySalary;
+
+            let taxAmount = applyTax ? totalSalary * 0.033 : 0;
+            let netSalary = totalSalary - taxAmount + incentive1Amount + incentive2Amount;
+            netSalary = Math.floor(netSalary / 10) * 10;
+
+            document.getElementById('attendanceDays').textContent = totalDays;
+            document.getElementById('totalHours').textContent = `${totalHours}시간`;
+            document.getElementById('totalSalary').textContent = `₩${totalSalary.toLocaleString()}`;
+            document.getElementById('taxAmount').textContent = `₩${taxAmount.toLocaleString()}`;
+            document.getElementById('incentive1Amount').textContent = `₩${incentive1Amount.toLocaleString()}`;
+            document.getElementById('incentive2Amount').textContent = `₩${incentive2Amount.toLocaleString()}`;
+            document.getElementById('netSalary').textContent = `₩${netSalary.toLocaleString()}`;
+        }
+
+        async function confirmSalary() {
+            const teacherSelect = document.getElementById('teacher');
+            const teacherId = teacherSelect.value;
+            const teacherName = teacherSelect.selectedOptions[0].text.split(" ")[0];
+            const monthValue = document.getElementById('month').value;
+
+            if (!teacherId || !monthValue) {
+                alert("강사 및 월을 선택해주세요.");
+                return;
             }
-        
 
-async function confirmSalary() {
-    const teacherSelect = document.getElementById('teacher');
-    const teacherId = teacherSelect.value;
-    const teacherName = teacherSelect.selectedOptions[0].text.split(" ")[0];
-    const monthValue = document.getElementById('month').value;
+            const [year, month] = monthValue.split('-');
+            const salaryType = document.getElementById('salaryType').value;
+            const hourlyWage = parseFloat(document.getElementById('hourlyRate').value) || 0;
+            const dailyWage = parseFloat(document.getElementById('dailyRate').value) || 0;
+            const monthlyWage = parseFloat(document.getElementById('monthlySalary').value) || 0;
+            const incentive1Count = parseInt(document.getElementById('incentive1').value) || 0;
+            const incentive2Amount = parseFloat(document.getElementById('incentive2').value) || 0;
+            
+            let totalSalary = Math.floor(parseFloat(document.getElementById('totalSalary').textContent.replace(/₩|,/g, '')) / 10) * 10;
+            let taxAmount = Math.floor(parseFloat(document.getElementById('taxAmount').textContent.replace(/₩|,/g, '')) / 10) * 10;
+            let salaryAmount = Math.floor(parseFloat(document.getElementById('netSalary').textContent.replace(/₩|,/g, '')) / 10) * 10;
+            const applyTax = document.getElementById('applyTax').checked;
 
-    if (!teacherId || !monthValue) {
-        alert("강사 및 월을 선택해주세요.");
-        return;
-    }
+            const salaryData = { 
+                year, month, teacherId, teacherName, totalSalary, taxAmount, salaryAmount,
+                salaryType, totalHours, totalDays, hourlyWage, dailyWage, monthlyWage, applyTax,
+                incentive1: incentive1Count,
+                incentive2: incentive2Amount
+            };
 
-    const [year, month] = monthValue.split('-');
-    const salaryType = document.getElementById('salaryType').value;
-    const hourlyWage = parseFloat(document.getElementById('hourlyRate').value) || 0;
-    const dailyWage = parseFloat(document.getElementById('dailyRate').value) || 0;
-    const monthlyWage = parseFloat(document.getElementById('monthlySalary').value) || 0;
-    
-    let totalSalary = Math.floor(parseFloat(document.getElementById('totalSalary').textContent.replace(/₩|,/g, '')) / 10) * 10;
-    let taxAmount = Math.floor(parseFloat(document.getElementById('taxAmount').textContent.replace(/₩|,/g, '')) / 10) * 10;
-    let salaryAmount = Math.floor(parseFloat(document.getElementById('netSalary').textContent.replace(/₩|,/g, '')) / 10) * 10;
-    const applyTax = document.getElementById('applyTax').checked;
+            console.log("📤 서버로 보내는 데이터:", salaryData);
 
-    const salaryData = { 
-        year, month, teacherId, teacherName, totalSalary, taxAmount, salaryAmount,
-        salaryType, totalHours, totalDays, hourlyWage, dailyWage, monthlyWage, applyTax 
-    };
+            const response = await fetch('https://supermax.kr/confirmSalary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(salaryData)
+            });
 
-    console.log("📤 서버로 보내는 데이터:", salaryData);
-
-    const response = await fetch('https://supermax.kr/confirmSalary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(salaryData)
-    });
-
-    if (response.ok) {
-        alert("✅ 급여가 확정되었습니다!");
-    } else {
-        alert("❌ 급여 확정 중 오류 발생!");
-        const errorText = await response.text();
-        console.error("❌ 서버 오류 응답:", errorText);
-    }
-}
-
-
-
-
-
+            if (response.ok) {
+                alert("✅ 급여가 확정되었습니다!");
+            } else {
+                alert("❌ 급여 확정 중 오류 발생!");
+                const errorText = await response.text();
+                console.error("❌ 서버 오류 응답:", errorText);
+            }
+        }
 
         async function downloadPDF() {
             const payrollSection = document.getElementById('payroll-section');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
 
-            // 선택된 강사 이름 가져오기
             const teacherName = document.getElementById('teacher').selectedOptions[0].text.split(" ")[0];
-
-            // 선택된 년월 가져오기 (YYYYMM 형식)
             const monthValue = document.getElementById('month').value;
             if (!monthValue || !teacherName) {
                 alert("강사와 월을 선택해주세요!");
@@ -338,7 +305,7 @@ async function confirmSalary() {
             });
         }
 
-        loadTeachers();
+        document.addEventListener("DOMContentLoaded", loadTeachers);
     </script>
     <footer style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
         &copy; 2025 일산맥스 강사 출근부 시스템 BY 정원장
