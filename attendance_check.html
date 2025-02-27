@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출근 체크</title>
+    <title>안양맥스 출근 체크</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
     <style>
         body { text-align: center; }
@@ -12,6 +12,14 @@
         .attendance-btn.selected { background-color: #4CAF50; color: white; }
         .btn { margin-top: 15px; }
         .teacher-entry { margin-bottom: 15px; }
+.work-hours-input {
+    display: block;
+    margin: 5px auto; /* 가운데 정렬 */
+    text-align: center;
+    width: 80px;
+}
+
+        
     </style>
 </head>
 <body>
@@ -31,14 +39,12 @@
 
         document.getElementById('currentDate').textContent = `${todayString} (${day}요일)`;
 
-        // 오늘 날짜의 출근 기록을 조회하는 함수 (엔드포인트: /attendancehistory)
         async function fetchAttendanceRecords() {
             const response = await fetch(`https://supermax.kr/attendancehistory?date=${todayString}`);
             return await response.json();
         }
 
         async function fetchTeachers() {
-            // 교사 목록과 출근 기록을 동시에 불러옵니다.
             const [teachersResponse, attendanceRecords] = await Promise.all([
                 fetch('https://supermax.kr/teachers'),
                 fetchAttendanceRecords()
@@ -48,28 +54,28 @@
             listContainer.innerHTML = '';
 
             teachers.forEach(teacher => {
-                // 해당 교사의 이미 기록된 출근 상태를 확인합니다.
                 const record = attendanceRecords.find(item => String(item.강사_id) === String(teacher.id));
-                // record가 존재하면, '출근', '지각', '휴무' 중 하나가 채워져 있어야 합니다.
                 const selectedStatus = record 
                     ? (record.출근 ? '출근' : record.지각 ? '지각' : record.휴무 ? '휴무' : null)
                     : null;
+                const workHours = record?.근무시간 ?? ''; // 기존 근무시간 표시
 
                 const div = document.createElement('div');
-                div.classList.add('teacher-entry');
-                div.innerHTML = `
-                    <p>${teacher.이름} (${teacher.직급 || '직급 없음'})</p>
-                    <div class="attendance-select" data-teacher-id="${teacher.id}">
-                        <div class="attendance-btn" data-status="출근">출근</div>
-                        <div class="attendance-btn" data-status="지각">지각</div>
-                        <div class="attendance-btn" data-status="휴무">휴무</div>
-                    </div>
-                `;
-                listContainer.appendChild(div);
+div.classList.add('teacher-entry');
+div.innerHTML = `
+    <p>${teacher.이름} (${teacher.직급 || '직급 없음'})</p>
+    <div class="attendance-select" data-teacher-id="${teacher.id}">
+        <div class="attendance-btn" data-status="출근">출근</div>
+        <div class="attendance-btn" data-status="지각">지각</div>
+        <div class="attendance-btn" data-status="휴무">휴무</div>
+    </div>
+    <input type="number" class="work-hours-input" placeholder="근무시간" value="${workHours}" min="0" step="0.5">
+`;
+listContainer.appendChild(div);
+
 
                 const buttons = div.querySelectorAll('.attendance-btn');
                 buttons.forEach(button => {
-                    // 서버에 저장된 상태와 일치하면 미리 선택된 상태로 표시합니다.
                     if (button.getAttribute('data-status') === selectedStatus) {
                         button.classList.add('selected');
                     }
@@ -82,15 +88,17 @@
         }
 
         async function saveAttendance() {
-            const entries = document.querySelectorAll('.attendance-select');
+            const entries = document.querySelectorAll('.teacher-entry');
             const attendanceData = [];
 
             entries.forEach(entry => {
                 const selectedButton = entry.querySelector('.attendance-btn.selected');
+                const workHoursInput = entry.querySelector('.work-hours-input');
                 if (selectedButton) {
                     const 상태 = selectedButton.getAttribute('data-status');
-                    const 강사_id = entry.getAttribute('data-teacher-id');
-                    attendanceData.push({ 강사_id, 출근일: todayString, 상태 });
+                    const 강사_id = entry.querySelector('.attendance-select').getAttribute('data-teacher-id');
+                    const 근무시간 = workHoursInput.value ? parseFloat(workHoursInput.value) : null;
+                    attendanceData.push({ 강사_id, 출근일: todayString, 상태, 근무시간 });
                 }
             });
 
@@ -111,5 +119,9 @@
 
         fetchTeachers();
     </script>
+
+    <footer style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
+        &copy; 2025 일산맥스 강사 출근부 시스템 BY 정원장
+    </footer>
 </body>
 </html>

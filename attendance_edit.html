@@ -27,6 +27,18 @@
         .지각-btn { background-color: #FFF3CD; }
         .휴무-btn { background-color: #F8D7DA; }
         .btn-selected { outline: 3px solid black; }
+        .work-hour-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+.work-hour-container input {
+    width: 60px;
+    text-align: center;
+}
+
     </style>
 </head>
 <body>
@@ -35,11 +47,14 @@
     <button onclick="generateCalendar()">조회</button>
     <div class="calendar" id="calendar"></div>
     
-    <div id="attendanceForm" class="hidden">
-        <h2 id="selectedDate"></h2>
-        <div id="teacherList"></div>
-        <button onclick="saveAttendance()">저장</button>
-    </div>
+<div id="attendanceForm" class="hidden">
+    <h2 id="selectedDate"></h2>
+    <div id="teacherList"></div>
+    <h3>근무시간 입력</h3>
+
+    <button onclick="saveAttendance()">저장</button>
+</div>
+
 
     <script>
 async function generateCalendar() {
@@ -121,42 +136,48 @@ async function generateCalendar() {
 
 
 
-        async function openAttendanceForm(date) {
-            document.getElementById('selectedDate').textContent = `${date} 출근 체크`;
-            document.getElementById('attendanceForm').classList.remove('hidden');
+   async function openAttendanceForm(date) {
+    document.getElementById('selectedDate').textContent = `${date} 출근 체크`;
+    document.getElementById('attendanceForm').classList.remove('hidden');
 
-            const response = await fetch('https://supermax.kr/teachers');
-            const teachers = await response.json();
-            const attendanceResponse = await fetch(`https://supermax.kr/attendancehistory?date=${date}`);
-            const attendanceRecords = await attendanceResponse.json();
-            console.log(`📢 불러온 출근 기록:`, attendanceRecords);
+    const response = await fetch('https://supermax.kr/teachers');
+    const teachers = await response.json();
+    const attendanceResponse = await fetch(`https://supermax.kr/attendancehistory?date=${date}`);
+    const attendanceRecords = await attendanceResponse.json();
+    console.log(`📢 불러온 출근 기록:`, attendanceRecords);
 
-            const listContainer = document.getElementById('teacherList');
-            listContainer.innerHTML = '';
+    const listContainer = document.getElementById('teacherList');
+    listContainer.innerHTML = '';
 
-            teachers.forEach(teacher => {
-                const record = attendanceRecords.find(r => r.강사_id == teacher.id);
-                let 상태값 = "";
+    teachers.forEach(teacher => {
+        const record = attendanceRecords.find(r => r.강사_id == teacher.id);
+        let 상태값 = "";
+        let 근무시간 = record ? record.근무시간 || 0 : 0; // ✅ 근무시간 가져오기
 
-                if (record) {
-                    console.log(`✅ ${date}의 ${teacher.이름} 기록:`, record);
-                    if (Number(record.출근) === 1) 상태값 = "출근";
-                    else if (Number(record.지각) === 1) 상태값 = "지각";
-                    else if (Number(record.휴무) === 1) 상태값 = "휴무";
-                }
-
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <p>${teacher.이름} (${teacher.직급 || '직급 없음'})</p>
-                    <div class="status-container">
-                        <button class="status-btn 출근-btn ${상태값 === '출근' ? 'btn-selected' : ''}" onclick="selectStatus(this, '출근')" data-teacher-id="${teacher.id}">출근</button>
-                        <button class="status-btn 지각-btn ${상태값 === '지각' ? 'btn-selected' : ''}" onclick="selectStatus(this, '지각')" data-teacher-id="${teacher.id}">지각</button>
-                        <button class="status-btn 휴무-btn ${상태값 === '휴무' ? 'btn-selected' : ''}" onclick="selectStatus(this, '휴무')" data-teacher-id="${teacher.id}">휴무</button>
-                    </div>
-                `;
-                listContainer.appendChild(div);
-            });
+        if (record) {
+            if (Number(record.출근) === 1) 상태값 = "출근";
+            else if (Number(record.지각) === 1) 상태값 = "지각";
+            else if (Number(record.휴무) === 1) 상태값 = "휴무";
         }
+
+   const div = document.createElement('div');
+div.innerHTML = `
+    <p>${teacher.이름} (${teacher.직급 || '직급 없음'})</p>
+    <div class="status-container">
+        <button class="status-btn 출근-btn ${상태값 === '출근' ? 'btn-selected' : ''}" onclick="selectStatus(this, '출근')" data-teacher-id="${teacher.id}">출근</button>
+        <button class="status-btn 지각-btn ${상태값 === '지각' ? 'btn-selected' : ''}" onclick="selectStatus(this, '지각')" data-teacher-id="${teacher.id}">지각</button>
+        <button class="status-btn 휴무-btn ${상태값 === '휴무' ? 'btn-selected' : ''}" onclick="selectStatus(this, '휴무')" data-teacher-id="${teacher.id}">휴무</button>
+    </div>
+    <div class="work-hour-container">
+        <label>근무시간:</label>
+        <input type="number" class="workHours" data-teacher-id="${teacher.id}" value="${record?.근무시간 || 0}" step="0.5" min="0">
+        <span>시간</span>
+    </div>
+`;
+
+        listContainer.appendChild(div);
+    });
+}
 
         function selectStatus(button, status) {
             const parent = button.parentNode;
@@ -164,26 +185,34 @@ async function generateCalendar() {
             button.classList.add('btn-selected');
         }
 
-        async function saveAttendance() {
-            const selects = document.querySelectorAll('.btn-selected');
-            const attendanceData = [];
+   async function saveAttendance() {
+    const selects = document.querySelectorAll('.btn-selected');
+    const attendanceData = [];
 
-            selects.forEach(button => {
-                const 상태 = button.textContent;
-                const 강사_id = button.getAttribute('data-teacher-id');
-                const 출근일 = document.getElementById('selectedDate').textContent.split(' ')[0];
+    selects.forEach(button => {
+        const 상태 = button.textContent;
+        const 강사_id = button.getAttribute('data-teacher-id');
+        const 출근일 = document.getElementById('selectedDate').textContent.split(' ')[0];
 
-                attendanceData.push({ 강사_id, 출근일, 상태 });
-            });
+        // ✅ 해당 강사의 근무시간 가져오기
+        const 근무시간Input = document.querySelector(`.workHours[data-teacher-id="${강사_id}"]`);
+        const 근무시간 = 근무시간Input ? parseFloat(근무시간Input.value) || 0 : 0;
 
-            await fetch('https://supermax.kr/attendancecheck', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(attendanceData)
-            });
+        attendanceData.push({ 강사_id, 출근일, 상태, 근무시간 });
+    });
 
-            alert('✅ 출근 기록 저장 완료!');
-        }
+    await fetch('https://supermax.kr/attendancecheck', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(attendanceData)
+    });
+
+    alert('✅ 출근 기록 저장 완료!');
+}
+
     </script>
+        <footer style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
+            &copy; 2025 일산맥스 강사 출근부 시스템 BY 정원장
+        </footer>
 </body>
 </html>
