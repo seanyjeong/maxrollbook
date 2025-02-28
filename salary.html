@@ -25,16 +25,22 @@
             let totalSalary = 0;
             let totalTax = 0;
             let totalNetSalary = 0;
+            let totalIncentive1 = 0;
+            let totalIncentive2 = 0;
 
             if (data.length > 0) {
                 data.forEach(record => {
                     totalSalary += record.총급여;
                     totalTax += record.세금금액;
                     totalNetSalary += record.실지급액;
+                    totalIncentive1 += record.인센티브1 || 0;
+                    totalIncentive2 += record.인센티브2 || 0;
 
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${record.강사이름}</td>
+                        <td>₩${(record.인센티브1 || 0).toLocaleString()}</td>
+                        <td>₩${(record.인센티브2 || 0).toLocaleString()}</td>
                         <td>₩${record.총급여.toLocaleString()}</td>
                         <td>₩${record.세금금액.toLocaleString()}</td>
                         <td>₩${record.실지급액.toLocaleString()}</td>
@@ -42,9 +48,11 @@
                     tableBody.appendChild(row);
                 });
             } else {
-                tableBody.innerHTML = `<tr><td colspan="4">확정된 급여가 없습니다.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6">확정된 급여가 없습니다.</td></tr>`;
             }
 
+            document.getElementById('totalIncentive1').textContent = `총 인센티브1(신규학생): ₩${totalIncentive1.toLocaleString()}`;
+            document.getElementById('totalIncentive2').textContent = `총 인센티브2: ₩${totalIncentive2.toLocaleString()}`;
             document.getElementById('totalSalary').textContent = `총 지급 금액: ₩${totalSalary.toLocaleString()}`;
             document.getElementById('totalTax').textContent = `총 세금: ₩${totalTax.toLocaleString()}`;
             document.getElementById('totalNetSalary').textContent = `총 실지급액: ₩${totalNetSalary.toLocaleString()}`;
@@ -72,7 +80,7 @@ async function downloadExcel() {
 
         // ✅ 초기화
         months.forEach(month => {
-            monthlyTotals[`${year}-${month}`] = { 총급여: 0, 세금금액: 0, 실지급액: 0 };
+            monthlyTotals[`${year}-${month}`] = { 총급여: 0, 세금금액: 0, 실지급액: 0, 인센티브1: 0, 인센티브2: 0 };
         });
 
         // ✅ 각 월별 급여 데이터 수집
@@ -89,12 +97,16 @@ async function downloadExcel() {
                 }
 
                 salaryData[teacherId][`${year}-${month}`] = {
+                    인센티브1: record.인센티브1 || 0,
+                    인센티브2: record.인센티브2 || 0,
                     총급여: record.총급여,
                     세금금액: record.세금금액,
                     실지급액: record.실지급액
                 };
 
                 // ✅ 월별 합계 누적
+                monthlyTotals[`${year}-${month}`].인센티브1 += record.인센티브1 || 0;
+                monthlyTotals[`${year}-${month}`].인센티브2 += record.인센티브2 || 0;
                 monthlyTotals[`${year}-${month}`].총급여 += record.총급여;
                 monthlyTotals[`${year}-${month}`].세금금액 += record.세금금액;
                 monthlyTotals[`${year}-${month}`].실지급액 += record.실지급액;
@@ -102,13 +114,13 @@ async function downloadExcel() {
         }
 
         // ✅ 엑셀 헤더 (월별 병합 행 + 서브헤더)
-        const headerRow1 = ["강사이름", "주민번호", "은행명", "계좌번호", ...months.flatMap(m => [`${year}-${m}`, "", ""]), "강사별 총액"];
-        const headerRow2 = ["", "", "", "", ...months.flatMap(() => ["총급여", "세금", "실지급액"]), ""];
+        const headerRow1 = ["강사이름", "주민번호", "은행명", "계좌번호", ...months.flatMap(m => [`${year}-${m}`, "", "", "", ""]), "강사별 총액", "", "", "", ""];
+        const headerRow2 = ["", "", "", "", ...months.flatMap(() => ["인센티브1", "인센티브2", "총급여", "세금", "실지급액"]), "인센티브1", "인센티브2", "총급여", "세금", "실지급액"];
 
         // ✅ 엑셀 데이터 배열 생성
         const sheetData = [headerRow1, headerRow2];
 
-        let totalAnnualSalary = { 총급여: 0, 세금금액: 0, 실지급액: 0 };
+        let totalAnnualSalary = { 총급여: 0, 세금금액: 0, 실지급액: 0, 인센티브1: 0, 인센티브2: 0 };
 
         // ✅ 각 강사의 데이터를 정리하여 행 추가
         teachers.forEach(teacher => {
@@ -119,28 +131,37 @@ async function downloadExcel() {
                 teacher.계좌번호 || ""
             ];
 
-            let teacherTotal = { 총급여: 0, 세금금액: 0, 실지급액: 0 };
+            let teacherTotal = { 총급여: 0, 세금금액: 0, 실지급액: 0, 인센티브1: 0, 인센티브2: 0 };
 
             months.forEach(month => {
                 const monthKey = `${year}-${month}`;
-                const data = salaryData[teacher.id]?.[monthKey] || { 총급여: 0, 세금금액: 0, 실지급액: 0 };
+                const data = salaryData[teacher.id]?.[monthKey] || { 인센티브1: 0, 인센티브2: 0, 총급여: 0, 세금금액: 0, 실지급액: 0 };
 
                 row.push(
+                    data.인센티브1.toLocaleString(),
+                    data.인센티브2.toLocaleString(),
                     data.총급여.toLocaleString(), 
                     data.세금금액.toLocaleString(), 
                     data.실지급액.toLocaleString()
                 );
 
+                teacherTotal.인센티브1 += data.인센티브1;
+                teacherTotal.인센티브2 += data.인센티브2;
                 teacherTotal.총급여 += data.총급여;
                 teacherTotal.세금금액 += data.세금금액;
                 teacherTotal.실지급액 += data.실지급액;
             });
 
             row.push(
+                teacherTotal.인센티브1.toLocaleString(),
+                teacherTotal.인센티브2.toLocaleString(),
                 teacherTotal.총급여.toLocaleString(), 
                 teacherTotal.세금금액.toLocaleString(), 
                 teacherTotal.실지급액.toLocaleString()
             );
+            
+            totalAnnualSalary.인센티브1 += teacherTotal.인센티브1;
+            totalAnnualSalary.인센티브2 += teacherTotal.인센티브2;
             totalAnnualSalary.총급여 += teacherTotal.총급여;
             totalAnnualSalary.세금금액 += teacherTotal.세금금액;
             totalAnnualSalary.실지급액 += teacherTotal.실지급액;
@@ -151,10 +172,14 @@ async function downloadExcel() {
         sheetData.push([
             "월별 총액", "", "", "",
             ...months.flatMap(m => [
+                monthlyTotals[`${year}-${m}`].인센티브1.toLocaleString(),
+                monthlyTotals[`${year}-${m}`].인센티브2.toLocaleString(),
                 monthlyTotals[`${year}-${m}`].총급여.toLocaleString(),
                 monthlyTotals[`${year}-${m}`].세금금액.toLocaleString(),
                 monthlyTotals[`${year}-${m}`].실지급액.toLocaleString()
             ]),
+            totalAnnualSalary.인센티브1.toLocaleString(),
+            totalAnnualSalary.인센티브2.toLocaleString(),
             totalAnnualSalary.총급여.toLocaleString(), 
             totalAnnualSalary.세금금액.toLocaleString(), 
             totalAnnualSalary.실지급액.toLocaleString()
@@ -166,8 +191,8 @@ async function downloadExcel() {
 
         // ✅ 셀 병합 설정
         ws["!merges"] = months.map((_, i) => ({
-            s: { r: 0, c: 4 + i * 3 }, // 시작 셀 (첫 번째 행의 4+i*3 번째 열)
-            e: { r: 0, c: 6 + i * 3 }  // 끝 셀 (첫 번째 행의 6+i*3 번째 열)
+            s: { r: 0, c: 4 + i * 5 }, // 시작 셀 (첫 번째 행의 4+i*5 번째 열)
+            e: { r: 0, c: 8 + i * 5 }  // 끝 셀 (첫 번째 행의 8+i*5 번째 열)
         }));
 
         // ✅ 월별 배경색 설정 - 파스텔톤으로 변경하여 시인성 개선
@@ -180,12 +205,12 @@ async function downloadExcel() {
             "E5FFFF"  // 연한 하늘
         ];
         for (let i = 0; i < months.length; i++) {
-            const colStart = 4 + i * 3;
+            const colStart = 4 + i * 5;
             const color = monthColors[i % monthColors.length];
 
             // 헤더부터 마지막 행까지 색상 적용
             for (let row = 0; row < sheetData.length; row++) {
-                for (let col = 0; col < 3; col++) {
+                for (let col = 0; col < 5; col++) {
                     const cell = ws[XLSX.utils.encode_cell({ r: row, c: colStart + col })];
                     if (cell) {
                         cell.s = {
@@ -232,8 +257,6 @@ async function downloadExcel() {
         alert("엑셀 파일 생성 중 오류가 발생했습니다.");
     }
 }
-
-
     </script>
 </head>
 <body>
@@ -250,16 +273,20 @@ async function downloadExcel() {
         <thead>
             <tr>
                 <th>강사 이름</th>
+                <th>인센티브1(신규학생)</th>
+                <th>인센티브2</th>
                 <th>총급여</th>
                 <th>세금 (3.3%)</th>
                 <th>실지급액</th>
             </tr>
         </thead>
         <tbody id="salaryTableBody">
-            <tr><td colspan="4">조회된 급여 데이터 없음</td></tr>
+            <tr><td colspan="6">조회된 급여 데이터 없음</td></tr>
         </tbody>
     </table>
 
+    <h3 id="totalIncentive1">총 인센티브1(신규학생): ₩0</h3>
+    <h3 id="totalIncentive2">총 인센티브2: ₩0</h3>
     <h3 id="totalSalary">총 지급 금액: ₩0</h3>
     <h3 id="totalTax">총 세금: ₩0</h3>
     <h3 id="totalNetSalary">총 실지급액: ₩0</h3>
