@@ -60,6 +60,10 @@
             <p id="grade3-count">0명</p>
         </div>
         <div class="stat-box">
+            <h4>N수생</h4>
+            <p id="gradeN-count">0명</p>
+        </div>
+        <div class="stat-box">
             <h4>남자</h4>
             <p id="male-count">0명</p>
         </div>
@@ -72,7 +76,12 @@
     <form id="studentForm">
         <input type="text" id="name" placeholder="이름" required>
         <input type="text" id="school" placeholder="학교">
-        <input type="text" id="grade" placeholder="학년">
+        <select id="grade">
+            <option value="1">1학년</option>
+            <option value="2">2학년</option>
+            <option value="3">3학년</option>
+            <option value="N">N수생</option>
+        </select>
         <select id="gender">
             <option value="남">남</option>
             <option value="여">여</option>
@@ -101,6 +110,7 @@
                 <option value="1">1학년</option>
                 <option value="2">2학년</option>
                 <option value="3">3학년</option>
+                <option value="N">N수생</option>
             </select>
         </label>
         <label>성별: 
@@ -143,9 +153,10 @@
     function updateStats(students) {
         const stats = {
             total: students.length,
-            grade1: students.filter(s => parseInt(s.학년) === 1).length,
-            grade2: students.filter(s => parseInt(s.학년) === 2).length,
-            grade3: students.filter(s => parseInt(s.학년) === 3).length,
+            grade1: students.filter(s => s.학년 === "1").length,
+            grade2: students.filter(s => s.학년 === "2").length,
+            grade3: students.filter(s => s.학년 === "3").length,
+            gradeN: students.filter(s => s.학년 === "N").length,
             male: students.filter(s => s.성별 === "남").length,
             female: students.filter(s => s.성별 === "여").length
         };
@@ -154,6 +165,7 @@
         document.getElementById("grade1-count").textContent = `${stats.grade1}명`;
         document.getElementById("grade2-count").textContent = `${stats.grade2}명`;
         document.getElementById("grade3-count").textContent = `${stats.grade3}명`;
+        document.getElementById("gradeN-count").textContent = `${stats.gradeN}명`;
         document.getElementById("male-count").textContent = `${stats.male}명`;
         document.getElementById("female-count").textContent = `${stats.female}명`;
     }
@@ -191,15 +203,15 @@
         const response = await fetch(API_URL + "/adminstudents");
         const students = await response.json();
 
-        const gradeFilter = parseInt(document.getElementById("filter-grade").value) || null;
+        const gradeFilter = document.getElementById("filter-grade").value;
         const genderFilter = document.getElementById("filter-gender").value;
 
         const filteredStudents = students.filter(s => 
-            (!gradeFilter || parseInt(s.학년) === gradeFilter) && 
+            (!gradeFilter || s.학년 === gradeFilter) && 
             (!genderFilter || s.성별 === genderFilter)
         );
 
-        updateStats(students); // 전체 통계는 필터와 관계없이 보여줌
+        updateStats(students);
 
         const table = document.getElementById("studentList");
         table.innerHTML = filteredStudents
@@ -221,13 +233,18 @@
     function editStudent(id, mon, tue, wed, thu, fri, sat, sun) {
         const row = document.querySelector(`tr[data-id="${id}"]`);
         const cells = row.children;
-        const number = cells[0].innerText; // 번호 저장
+        const number = cells[0].innerText;
 
         row.innerHTML = `
             <td>${number}</td>
             <td><input type="text" value="${cells[1].innerText}" id="edit-name-${id}"></td>
             <td><input type="text" value="${cells[2].innerText}" id="edit-school-${id}"></td>
-            <td><input type="number" value="${cells[3].innerText}" id="edit-grade-${id}"></td>
+            <td><select id="edit-grade-${id}">
+                <option value="1" ${cells[3].innerText === "1" ? "selected" : ""}>1학년</option>
+                <option value="2" ${cells[3].innerText === "2" ? "selected" : ""}>2학년</option>
+                <option value="3" ${cells[3].innerText === "3" ? "selected" : ""}>3학년</option>
+                <option value="N" ${cells[3].innerText === "N" ? "selected" : ""}>N수생</option>
+            </select></td>
             <td><select id="edit-gender-${id}">
                 <option value="남" ${cells[4].innerText === "남" ? "selected" : ""}>남</option>
                 <option value="여" ${cells[4].innerText === "여" ? "selected" : ""}>여</option>
