@@ -124,9 +124,11 @@
             try {
                 const response = await fetch(`${API_BASE}/attendancetoday`);
                 const students = await response.json();
+                // 학생들을 이름순으로 정렬
+                students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
                 updateDate(students.length);
-                renderStudentList(students);  // 출석 대상 학생 렌더링
-                await fetchAttendanceStats(); // 통계 업데이트
+                renderStudentList(students);
+                await fetchAttendanceStats();
             } catch (error) {
                 console.error("출석 데이터를 불러오는 중 오류 발생:", error);
             }
@@ -242,47 +244,46 @@
             document.getElementById("lateCount").textContent = late;
             document.getElementById("absentCount").textContent = absent;
         }
-        // 출석 데이터 저장 후 통계 업데이트 + 저장 완료 메시지
-async function saveAttendance() {
-    const records = [];
-    document.querySelectorAll(".attendance-card").forEach(card => {
-        const studentId = card.dataset.id;
-        const selectedButton = card.querySelector(".selected");
-        const selectedStatus = selectedButton ? selectedButton.dataset.status : null;
-        const reason = card.querySelector(".reason-input").value.trim();
 
-        if (!selectedStatus) return;
+        async function saveAttendance() {
+            const records = [];
+            document.querySelectorAll(".attendance-card").forEach(card => {
+                const studentId = card.dataset.id;
+                const selectedButton = card.querySelector(".selected");
+                const selectedStatus = selectedButton ? selectedButton.dataset.status : null;
+                const reason = card.querySelector(".reason-input").value.trim();
 
-        records.push({
-            학생_id: studentId,
-            출석일: new Date().toISOString().split("T")[0],
-            출석상태: selectedStatus,
-            사유: reason || null
-        });
-    });
+                if (!selectedStatus) return;
 
-    try {
-        const response = await fetch(`${API_BASE}/attendancerecord`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(records)
-        });
+                records.push({
+                    학생_id: studentId,
+                    출석일: new Date().toISOString().split("T")[0],
+                    출석상태: selectedStatus,
+                    사유: reason || null
+                });
+            });
 
-        if (response.ok) {
-            alert("✅ 출석이 성공적으로 저장되었습니다!");
-            await fetchAttendanceStats(); // 저장 후 통계 업데이트
-            await fetchAttendanceData();  // 저장 후 출석 데이터도 새로고침
-        } else {
-            alert("❌ 출석 저장에 실패했습니다.");
+            try {
+                const response = await fetch(`${API_BASE}/attendancerecord`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(records)
+                });
+
+                if (response.ok) {
+                    alert("✅ 출석이 성공적으로 저장되었습니다!");
+                    await fetchAttendanceStats();
+                    await fetchAttendanceData();
+                } else {
+                    alert("❌ 출석 저장에 실패했습니다.");
+                }
+            } catch (error) {
+                console.error("출석 저장 중 오류 발생:", error);
+                alert("❌ 출석 저장 중 오류가 발생했습니다.");
+            }
         }
-    } catch (error) {
-        console.error("출석 저장 중 오류 발생:", error);
-        alert("❌ 출석 저장 중 오류가 발생했습니다.");
-    }
-}
 
-document.getElementById("saveAttendance").addEventListener("click", saveAttendance);
-
+        document.getElementById("saveAttendance").addEventListener("click", saveAttendance);
 
         updateDate();
         fetchAttendanceData();
