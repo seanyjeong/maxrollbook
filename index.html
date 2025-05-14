@@ -4,95 +4,440 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출석 관리 시스템</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <title>출석 관리 시스템 | 맥스일산</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --accent: #00cec9;
+            --light: #f8f9fa;
+            --dark: #2d3436;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
         body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            min-height: 100vh;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
             text-align: center;
-            padding: 20px;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
         }
 
-        h2 {
-            margin-bottom: 20px;
-        }
-
-        .menu-button {
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 15px 20px;
-            margin: 10px 0;
-            font-size: 18px;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #636e72;
+            margin-bottom: 2rem;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            border-left: 5px solid var(--primary);
             cursor: pointer;
-            width: 100%;
-            max-width: 350px;
-            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .menu-button:hover {
-            background-color: #0056b3;
-        }
-
-        .menu-button span {
-            margin-left: 10px;
-        }
-
-        .button-container {
+            text-align: left;
             display: flex;
             flex-direction: column;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-card.admin {
+            border-left-color: #e84393;
+        }
+
+        .menu-card.attendance {
+            border-left-color: var(--accent);
+        }
+
+        .menu-card.report {
+            border-left-color: #fdcb6e;
+        }
+
+        .menu-card.contact {
+            border-left-color: #74b9ff;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-icon {
+            font-size: 1.8rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: white;
+        }
+
+        .admin .card-icon {
+            background: linear-gradient(135deg, #e84393 0%, #fd79a8 100%);
+        }
+
+        .attendance .card-icon {
+            background: linear-gradient(135deg, var(--accent) 0%, #55efc4 100%);
+        }
+
+        .report .card-icon {
+            background: linear-gradient(135deg, #fdcb6e 0%, #ffeaa7 100%);
+        }
+
+        .contact .card-icon {
+            background: linear-gradient(135deg, #74b9ff 0%, #a5d8ff 100%);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: #636e72;
+            margin-top: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .card-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 500;
+            display: flex;
             align-items: center;
         }
 
-        .emoji {
-            font-size: 24px;
+        .card-footer i {
+            margin-left: auto;
+            transition: var(--transition);
+        }
+
+        .menu-card:hover .card-footer i {
+            transform: translateX(3px);
+        }
+
+        @media (max-width: 600px) {
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 1.5rem;
+            }
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 400px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #636e72;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .modal-btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-btn.primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+        }
+
+        .modal-btn.secondary {
+            background-color: white;
+            color: var(--dark);
+            border: 1px solid #ddd;
+        }
+
+        .modal-btn:hover {
+            opacity: 0.9;
         }
     </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-clipboard-check"></i>
+                <span>맥스일산 출석관리</span>
+            </div>
+            <p class="subtitle">학생 출석을 체계적으로 관리하는 시스템</p>
+        </header>
+
+        <main>
+            <div class="menu-grid">
+                <div class="menu-card admin" onclick="showAdminModal()">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <h3 class="card-title">관리자 페이지</h3>
+                    </div>
+                    <p class="card-desc">학생 정보 관리, 시스템 설정 등 관리자 전용 기능</p>
+                    <div class="card-footer">
+                        <span>관리자 전용</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <div class="menu-card attendance" onclick="location.href='attendance.html'">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h3 class="card-title">출석 체크 (오늘)</h3>
+                    </div>
+                    <p class="card-desc">오늘 날짜로 학생 출석 상태를 체크하고 기록합니다</p>
+                    <div class="card-footer">
+                        <span>일일 출석 관리</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <div class="menu-card attendance" onclick="location.href='attendance_manual.html'">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <h3 class="card-title">특정 날짜 출석</h3>
+                    </div>
+                    <p class="card-desc">과거 또는 미래 날짜의 출석 상황을 수동으로 입력</p>
+                    <div class="card-footer">
+                        <span>수동 출석 입력</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <div class="menu-card report" onclick="location.href='month.html'">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h3 class="card-title">전체 인원 출석 현황</h3>
+                    </div>
+                    <p class="card-desc">전체 학생의 월별 출석률 통계를 확인합니다</p>
+                    <div class="card-footer">
+                        <span>통계 확인</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <div class="menu-card report" onclick="location.href='month2.html'">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <h3 class="card-title">개인별 출석 현황</h3>
+                    </div>
+                    <p class="card-desc">학생별 출석 기록을 확인하고 PDF로 저장 가능</p>
+                    <div class="card-footer">
+                        <span>PDF 출력 가능</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+
+                <div class="menu-card contact" onclick="location.href='contact.html'">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-phone-alt"></i>
+                        </div>
+                        <h3 class="card-title">연락처 (전화하기)</h3>
+                    </div>
+                    <p class="card-desc">학생 및 학부모와 연락하기 위한 연락처 정보</p>
+                    <div class="card-footer">
+                        <span>연락처 관리</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 관리자 모달 -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">관리자 로그인</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="input-group">
+                <label for="adminPassword">관리자 비밀번호</label>
+                <input type="password" id="adminPassword" placeholder="비밀번호 입력">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeModal()">취소</button>
+                <button class="modal-btn primary" onclick="checkAdminPassword()">확인</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function goToAdminPage() {
-            const password = prompt("관리자 비밀번호를 입력하세요:");
+        // 모달 관련 함수
+        function showAdminModal() {
+            document.getElementById('adminModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('adminModal').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+        }
+
+        function checkAdminPassword() {
+            const password = document.getElementById('adminPassword').value;
             if (password === "2580") {
                 location.href = 'admin.html';
             } else {
                 alert("비밀번호가 틀렸습니다.");
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('adminPassword').focus();
             }
         }
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('adminModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // 엔터 키로 로그인 가능
+        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkAdminPassword();
+            }
+        });
     </script>
-</head>
-
-<body>
-
-    <h2>맥스일산 출석관리 📋</h2>
-
-    <div class="button-container">
-        <button class="menu-button" onclick="goToAdminPage()">
-            <span class="emoji">🔐</span><span>관리자 페이지</span>
-        </button>
-
-        <button class="menu-button" onclick="location.href='attendance.html'">
-            <span class="emoji">✅</span><span>출석 체크 (오늘)</span>
-        </button>
-
-        <button class="menu-button" onclick="location.href='attendance_manual.html'">
-            <span class="emoji">📅</span><span>특정 날짜 출석 (수동 입력)</span>
-        </button>
-
-        <button class="menu-button" onclick="location.href='month.html'">
-            <span class="emoji">📊</span><span>전체 인원 출석 현황</span>
-        </button>
-
-        <button class="menu-button" onclick="location.href='month2.html'">
-            <span class="emoji">📄</span><span>개인별 출석 현황 (PDF 저장 가능)</span>
-        </button>
-
-        <button class="menu-button" onclick="location.href='contact.html'">
-            <span class="emoji">📞</span><span>연락처 (전화하기)</span>
-        </button>
-    </div>
-
 </body>
 
 </html>
