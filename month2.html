@@ -4,149 +4,417 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>맥스 일산교육원 학생별 출결현황</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <title>학생별 출결현황 | 맥스체대입시 일산교육원</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #d63031;
+            --light: #f8f9fa;
+            --dark: #2d3436;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
         body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f5f6fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
             text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .subtitle {
+            color: #636e72;
+            font-size: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        select, input[type="month"] {
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            border: 2px solid var(--secondary);
+            font-size: 1rem;
+        }
+
+        #studentSelect {
+            min-width: 250px;
+        }
+
+        #savePdfBtn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #savePdfBtn:hover {
+            background: #5a4bd1;
+            transform: translateY(-2px);
         }
 
         .calendar-container {
-            max-width: 550px;
-            margin: auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+        }
+
+        .pdf-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .pdf-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .student-info {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
         }
 
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            margin-top: 10px;
+            gap: 8px;
+            margin: 1.5rem 0;
         }
 
-        .day,
         .weekday {
-            padding: 15px;
-            border: 1px solid #ddd;
             text-align: center;
-            font-size: 16px;
+            font-weight: 600;
+            padding: 0.8rem;
+            color: var(--primary);
+            background: rgba(108, 92, 231, 0.1);
+            border-radius: 8px;
         }
 
-        .weekday {
-            font-weight: bold;
-            background: #f0f0f0;
+        .day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #eee;
+            font-weight: 500;
         }
 
         .day[data-status="출석"] {
-            background-color: lightgreen;
+            background-color: rgba(0, 184, 148, 0.2);
+            color: var(--success);
+            border-color: var(--success);
         }
 
         .day[data-status="지각"] {
-            background-color: orange;
+            background-color: rgba(253, 203, 110, 0.2);
+            color: #e17055;
+            border-color: #fdcb6e;
         }
 
         .day[data-status="결석"] {
-            background-color: lightcoral;
-        }
-
-        .summary,
-        .details {
-            margin-top: 20px;
-            text-align: left;
+            background-color: rgba(214, 48, 49, 0.2);
+            color: var(--danger);
+            border-color: var(--danger);
         }
 
         .legend {
             display: flex;
             justify-content: center;
-            gap: 15px;
-            margin-top: 10px;
+            gap: 1.5rem;
+            margin: 1rem 0;
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 0.5rem;
+            font-size: 0.9rem;
         }
 
         .legend-color {
             width: 15px;
             height: 15px;
-            display: inline-block;
-            border: 1px solid #ccc;
+            border-radius: 3px;
         }
 
-        .출석-color {
-            background-color: lightgreen;
+        .summary-cards {
+            display: flex;
+            gap: 1rem;
+            margin: 1.5rem 0;
         }
 
-        .지각-color {
-            background-color: orange;
-        }
-
-        .결석-color {
-            background-color: lightcoral;
-        }
-
-        #pdfContent h2 {
+        .summary-card {
+            flex: 1;
+            padding: 1.2rem;
+            border-radius: 8px;
             text-align: center;
-            margin-bottom: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        }
+
+        .summary-present {
+            background: rgba(0, 184, 148, 0.1);
+            color: var(--success);
+        }
+
+        .summary-late {
+            background: rgba(253, 203, 110, 0.1);
+            color: #e17055;
+        }
+
+        .summary-absent {
+            background: rgba(214, 48, 49, 0.1);
+            color: var(--danger);
+        }
+
+        .summary-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0.3rem 0;
+        }
+
+        .details {
+            margin-top: 1.5rem;
+        }
+
+        .details-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .absence-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .absence-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .absence-date {
+            font-weight: 500;
+        }
+
+        .absence-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-late {
+            background: rgba(253, 203, 110, 0.2);
+            color: #e17055;
+        }
+
+        .status-absent {
+            background: rgba(214, 48, 49, 0.2);
+            color: var(--danger);
+        }
+
+        .absence-reason {
+            font-size: 0.9rem;
+            color: #636e72;
+            margin-top: 0.3rem;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #636e72;
+        }
+
+        @media (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            #studentSelect {
+                width: 100%;
+            }
+            
+            .summary-cards {
+                flex-direction: column;
+            }
+            
+            .calendar {
+                gap: 5px;
+            }
+            
+            .weekday, .day {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
 
 <body>
+    <div class="container">
+        <header>
+            <h1 class="title">
+                <i class="fas fa-user-graduate"></i>
+                학생별 출결현황
+            </h1>
+            <p class="subtitle">맥스체대입시 일산교육원 개인별 출석 기록</p>
+        </header>
 
-    <h2>맥스체대입시 일산교육원 학생별 출결현황</h2>
-
-    <label>학생 선택:
-        <select id="studentSelect">
-            <option value="">학생을 선택하세요</option>
-        </select>
-    </label>
-
-    <label>월 선택:
-        <input type="month" id="monthPicker">
-    </label>
-
-    <button id="savePdfBtn">PDF로 저장</button>
-
-    <div class="calendar-container" id="pdfContent">
-        <h2>맥스체대입시 일산교육원 학생별 출결현황</h2>
-
-        <div id="pdfHeader">
-            <h3>학생 이름 / 월</h3>
-        </div>
-
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color 출석-color"></div> 출석
+        <div class="controls">
+            <div class="control-group">
+                <label for="studentSelect"><i class="fas fa-user"></i> 학생 선택:</label>
+                <select id="studentSelect">
+                    <option value="">학생을 선택하세요</option>
+                </select>
             </div>
-            <div class="legend-item">
-                <div class="legend-color 지각-color"></div> 지각
+
+            <div class="control-group">
+                <label for="monthPicker"><i class="fas fa-calendar-alt"></i> 월 선택:</label>
+                <input type="month" id="monthPicker">
             </div>
-            <div class="legend-item">
-                <div class="legend-color 결석-color"></div> 결석
+
+            <button id="savePdfBtn">
+                <i class="fas fa-file-pdf"></i> PDF 저장
+            </button>
+        </div>
+
+        <div class="calendar-container" id="pdfContent">
+            <div class="pdf-header">
+                <div class="pdf-title">맥스체대입시 일산교육원 학생별 출결현황</div>
+                <div class="student-info" id="pdfHeader">학생을 선택해주세요</div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(0, 184, 148, 0.2); border: 1px solid var(--success);"></div>
+                    출석
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(253, 203, 110, 0.2); border: 1px solid #fdcb6e;"></div>
+                    지각
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(214, 48, 49, 0.2); border: 1px solid var(--danger);"></div>
+                    결석
+                </div>
+            </div>
+
+            <div class="calendar" id="calendar">
+                <div class="weekday">일</div>
+                <div class="weekday">월</div>
+                <div class="weekday">화</div>
+                <div class="weekday">수</div>
+                <div class="weekday">목</div>
+                <div class="weekday">금</div>
+                <div class="weekday">토</div>
+            </div>
+
+            <div class="summary-cards">
+                <div class="summary-card summary-present">
+                    <div>출석</div>
+                    <div class="summary-value" id="presentCount">0</div>
+                    <div>일</div>
+                </div>
+                <div class="summary-card summary-late">
+                    <div>지각</div>
+                    <div class="summary-value" id="lateCount">0</div>
+                    <div>일</div>
+                </div>
+                <div class="summary-card summary-absent">
+                    <div>결석</div>
+                    <div class="summary-value" id="absentCount">0</div>
+                    <div>일</div>
+                </div>
+            </div>
+
+            <div class="details" id="details">
+                <div class="no-data" id="noDataMessage">
+                    <i class="fas fa-calendar-check" style="font-size: 2rem; margin-bottom: 1rem; color: #a29bfe;"></i>
+                    <p>학생과 월을 선택하면 출결 현황을 확인할 수 있습니다</p>
+                </div>
+                <div id="detailsContent" style="display: none;">
+                    <h3 class="details-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        지각/결석 상세 내역
+                    </h3>
+                    <ul class="absence-list" id="absenceList"></ul>
+                </div>
             </div>
         </div>
-
-        <div class="calendar" id="calendar">
-            <div class="weekday">일</div>
-            <div class="weekday">월</div>
-            <div class="weekday">화</div>
-            <div class="weekday">수</div>
-            <div class="weekday">목</div>
-            <div class="weekday">금</div>
-            <div class="weekday">토</div>
-        </div>
-
-        <div class="summary" id="summary">
-            <p>총 출석해야 할 일수: 0일</p>
-            <p>출석: 0일, 지각: 0일, 결석: 0일</p>
-        </div>
-
-        <div class="details" id="details"></div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -156,114 +424,188 @@
         const calendar = document.getElementById("calendar");
         const monthPicker = document.getElementById("monthPicker");
         const studentSelect = document.getElementById("studentSelect");
-        const summary = document.getElementById("summary");
-        const details = document.getElementById("details");
         const pdfHeader = document.getElementById("pdfHeader");
+        const presentCount = document.getElementById("presentCount");
+        const lateCount = document.getElementById("lateCount");
+        const absentCount = document.getElementById("absentCount");
+        const absenceList = document.getElementById("absenceList");
+        const noDataMessage = document.getElementById("noDataMessage");
+        const detailsContent = document.getElementById("detailsContent");
 
+        // 현재 월 설정
         const today = new Date();
         monthPicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
+        // 학생 목록 로드
         async function loadStudents() {
-            const res = await fetch(`${API_BASE}/adminstudents`);
-            const students = await res.json();
+            try {
+                const res = await fetch(`${API_BASE}/adminstudents`);
+                const students = await res.json();
 
-            students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
+                students.sort((a, b) => a.이름.localeCompare(b.이름, 'ko-KR'));
 
-            studentSelect.innerHTML = `<option value="">학생을 선택하세요</option>` + students.map(s => `<option value="${s.id}">${s.이름} (${s.학교})</option>`).join("");
+                studentSelect.innerHTML = `<option value="">학생을 선택하세요</option>` + 
+                    students.map(s => `<option value="${s.id}">${s.이름} (${s.학교} ${s.학년}학년)</option>`).join("");
+            } catch (error) {
+                console.error("학생 목록을 불러오는 중 오류 발생:", error);
+                alert("학생 목록을 불러오는 중 문제가 발생했습니다.");
+            }
         }
-        function updateDetails(data) {
-    const detailsList = data
-        .filter(d => d.출석상태 === '지각' || d.출석상태 === '결석')
-        .map(d => {
-            const 출석일 = new Date(d.출석일);
-            const 요일 = '일월화수목금토'[출석일.getDay()];
-            const 사유 = d.사유 || '사유 없음'; // 사유 없으면 '사유 없음'으로 표시
 
-            return `<li>${출석일.toLocaleDateString('ko-KR')} (${요일}) - ${d.출석상태} : ${사유}</li>`;
-        });
+        // 출석 데이터 로드
+        async function loadAttendance() {
+            const studentId = studentSelect.value;
+            if (!studentId) {
+                noDataMessage.style.display = 'block';
+                detailsContent.style.display = 'none';
+                return;
+            }
 
-    if (detailsList.length > 0) {
-        details.innerHTML = `<h4>지각 / 결석 상세 내역</h4><ul>${detailsList.join('')}</ul>`;
-    } else {
-        details.innerHTML = `<p>지각 및 결석 내역이 없습니다.</p>`;
-    }
-}
+            const [year, month] = monthPicker.value.split("-");
 
+            try {
+                const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
+                const attendanceData = await res.json();
 
-studentSelect.addEventListener("change", () => {
-    loadAttendance();
-    updatePdfHeader(); // 학생 선택 시 바로 반영
-});
+                renderCalendar(year, month, attendanceData);
+                updateSummary(attendanceData);
+                updateDetails(attendanceData);
+                updatePdfHeader();
+            } catch (error) {
+                console.error("출석 데이터를 불러오는 중 오류 발생:", error);
+                alert("출석 데이터를 불러오는 중 문제가 발생했습니다.");
+            }
+        }
 
-monthPicker.addEventListener("change", () => {
-    loadAttendance();
-    updatePdfHeader(); // 월 변경 시 바로 반영
-});
-
-
-async function loadAttendance() {
-    const studentId = studentSelect.value;
-    if (!studentId) return;
-
-    const [year, month] = monthPicker.value.split("-");
-
-    const res = await fetch(`${API_BASE}/attendancemonthstudent?year=${year}&month=${month}&studentId=${studentId}`);
-    const attendanceData = await res.json();
-
-    renderCalendar(year, month, attendanceData);
-    await updateSummary(attendanceData, year, month, studentId);
-    updateDetails(attendanceData);
-        // 학생 이름 / 월 반영
-    updatePdfHeader();
-
-
-}
-
-function updatePdfHeader() {
-    const studentName = studentSelect.options[studentSelect.selectedIndex].text.split(' ')[0];
-    const [year, month] = monthPicker.value.split('-');
-    pdfHeader.innerHTML = `<h3>${studentName} (${year}년 ${month}월)</h3>`;
-}
-
-
+        // 달력 렌더링
         function renderCalendar(year, month, data) {
-            calendar.innerHTML = Array.from({ length: 7 }, (_, i) => `<div class="weekday">${'일월화수목금토'[i]}</div>`).join('');
+            // 요일 헤더
+            calendar.innerHTML = Array.from({ length: 7 }, (_, i) => 
+                `<div class="weekday">${'일월화수목금토'[i]}</div>`).join('');
 
             const firstDay = new Date(year, month - 1, 1).getDay();
             const lastDate = new Date(year, month, 0).getDate();
 
-            calendar.innerHTML += `<div></div>`.repeat(firstDay);
+            // 빈 칸 추가
+            for (let i = 0; i < firstDay; i++) {
+                calendar.innerHTML += `<div></div>`;
+            }
 
-            for (let i = 1; i <= lastDate; i++) {
-                const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            // 날짜 채우기
+            for (let date = 1; date <= lastDate; date++) {
+                const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
                 const record = data.find(d => d.출석일.startsWith(fullDate));
-
-                calendar.innerHTML += `<div class="day" data-status="${record ? record.출석상태 : ''}">${i}</div>`;
+                const status = record ? record.출석상태 : '';
+                
+                calendar.innerHTML += `<div class="day" data-status="${status}">${date}</div>`;
             }
         }
 
-        async function updateSummary(data, year, month, studentId) {
-            const 출석 = data.filter(d => d.출석상태 === '출석').length;
-            const 지각 = data.filter(d => d.출석상태 === '지각').length;
-            const 결석 = data.filter(d => d.출석상태 === '결석').length;
+        // 요약 정보 업데이트
+        function updateSummary(data) {
+            const present = data.filter(d => d.출석상태 === '출석').length;
+            const late = data.filter(d => d.출석상태 === '지각').length;
+            const absent = data.filter(d => d.출석상태 === '결석').length;
 
-            summary.innerHTML = `<p>출석: ${출석}일, 지각: ${지각}일, 결석: ${결석}일</p>`;
+            presentCount.textContent = present;
+            lateCount.textContent = late;
+            absentCount.textContent = absent;
         }
 
-document.getElementById("savePdfBtn").addEventListener("click", () => {
-    const studentName = studentSelect.options[studentSelect.selectedIndex].text.split(' ')[0];
-    const month = monthPicker.value;
+        // 상세 내역 업데이트
+        function updateDetails(data) {
+            const absenceData = data
+                .filter(d => d.출석상태 === '지각' || d.출석상태 === '결석')
+                .map(d => {
+                    const date = new Date(d.출석일);
+                    const formattedDate = date.toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        weekday: 'short'
+                    });
+                    
+                    return {
+                        date: formattedDate,
+                        status: d.출석상태,
+                        reason: d.사유 || '사유 없음'
+                    };
+                });
 
-    html2pdf().from(document.getElementById('pdfContent')).set({
-        margin: 10,
-        filename: `${studentName}_${month}_출결현황.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).save();
-});
+            if (absenceData.length > 0) {
+                absenceList.innerHTML = absenceData.map(item => `
+                    <li class="absence-item">
+                        <div>
+                            <div class="absence-date">${item.date}</div>
+                            <div class="absence-reason">${item.reason}</div>
+                        </div>
+                        <div class="absence-status ${item.status === '지각' ? 'status-late' : 'status-absent'}">
+                            ${item.status}
+                        </div>
+                    </li>
+                `).join('');
 
+                noDataMessage.style.display = 'none';
+                detailsContent.style.display = 'block';
+            } else {
+                noDataMessage.style.display = 'block';
+                detailsContent.style.display = 'none';
+            }
+        }
 
+        // PDF 헤더 업데이트
+        function updatePdfHeader() {
+            const studentOption = studentSelect.options[studentSelect.selectedIndex];
+            if (!studentOption.value) return;
+
+            const studentName = studentOption.text.split(' ')[0];
+            const [year, month] = monthPicker.value.split('-');
+            
+            pdfHeader.innerHTML = `${studentName} - ${year}년 ${month}월`;
+        }
+
+        // PDF 저장
+        document.getElementById("savePdfBtn").addEventListener("click", () => {
+            const studentOption = studentSelect.options[studentSelect.selectedIndex];
+            if (!studentOption.value) {
+                alert("학생을 선택해주세요.");
+                return;
+            }
+
+            const studentName = studentOption.text.split(' ')[0];
+            const month = monthPicker.value;
+
+            const opt = {
+                margin: 10,
+                filename: `${studentName}_${month}_출결현황.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    logging: true,
+                    useCORS: true,
+                    allowTaint: true
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait' 
+                }
+            };
+
+            // PDF 생성 전에 일부 요소 숨기기
+            const saveBtn = document.getElementById('savePdfBtn');
+            saveBtn.style.display = 'none';
+            
+            html2pdf().from(document.getElementById('pdfContent')).set(opt).save().then(() => {
+                saveBtn.style.display = 'flex';
+            });
+        });
+
+        // 이벤트 리스너
+        studentSelect.addEventListener("change", loadAttendance);
+        monthPicker.addEventListener("change", loadAttendance);
+
+        // 초기화
         loadStudents();
     </script>
 </body>
