@@ -3,65 +3,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출석부 달력</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <title>출석부 달력 | 맥스체대입시 일산교육원</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { text-align: center; }
-        .calendar-container {
-            max-width: 600px;
-            margin: auto;
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #d63031;
+            --light: #f8f9fa;
+            --dark: #2d3436;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f5f6fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .subtitle {
+            color: #636e72;
+            font-size: 1rem;
+        }
+
+        .month-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .month-selector button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .month-selector button:hover {
+            background: #5a4bd1;
+            transform: scale(1.1);
+        }
+
+        #monthPicker {
+            font-size: 1.1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 2px solid var(--secondary);
+            text-align: center;
+        }
+
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            margin-top: 10px;
+            gap: 8px;
+            margin-bottom: 2rem;
         }
-        .day, .weekday {
-            padding: 15px;
-            border: 1px solid #ddd;
-            text-align: center;
-            font-size: 16px;
-        }
+
         .weekday {
-            font-weight: bold;
-            background: #f0f0f0;
+            text-align: center;
+            font-weight: 600;
+            padding: 0.8rem;
+            color: var(--primary);
+            background: rgba(108, 92, 231, 0.1);
+            border-radius: 8px;
         }
+
         .day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 8px;
+            background: white;
+            box-shadow: var(--card-shadow);
             cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
         }
+
         .day:hover {
-            background-color: #f0f0f0;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
-        .stats {
-            font-size: 12px;
-            color: #555;
+
+        .day-number {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 4px;
         }
+
+        .day-stats {
+            display: flex;
+            gap: 3px;
+            font-size: 0.6rem;
+            font-weight: 500;
+        }
+
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .stat-present {
+            background-color: var(--success);
+        }
+
+        .stat-late {
+            background-color: var(--warning);
+        }
+
+        .stat-absent {
+            background-color: var(--danger);
+        }
+
         .selected-day {
-            background-color: #007BFF;
+            background: var(--primary);
             color: white;
         }
-        .attendance-list {
-            text-align: left;
-            max-width: 600px;
-            margin: 20px auto;
+
+        .selected-day .day-stats .stat-dot {
+            background-color: white;
+            opacity: 0.8;
         }
-        .attendance-list ul {
-            list-style-type: none;
+
+        .empty-day {
+            visibility: hidden;
+        }
+
+        .details-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            margin-top: 2rem;
+        }
+
+        .details-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .details-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .details-summary {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-item {
+            flex: 1;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .summary-present {
+            background: rgba(0, 184, 148, 0.1);
+            color: var(--success);
+        }
+
+        .summary-late {
+            background: rgba(253, 203, 110, 0.1);
+            color: #e17055;
+        }
+
+        .summary-absent {
+            background: rgba(214, 48, 49, 0.1);
+            color: var(--danger);
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+        }
+
+        .student-list {
+            list-style: none;
             padding: 0;
+            margin: 0;
+        }
+
+        .student-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: var(--transition);
+        }
+
+        .student-item:hover {
+            background: #f8f9fa;
+        }
+
+        .student-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 1rem;
+        }
+
+        .status-present {
+            background-color: var(--success);
+        }
+
+        .status-late {
+            background-color: var(--warning);
+        }
+
+        .status-absent {
+            background-color: var(--danger);
+        }
+
+        .student-info {
+            flex: 1;
+        }
+
+        .student-name {
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .student-meta {
+            font-size: 0.8rem;
+            color: #636e72;
+        }
+
+        .student-reason {
+            font-size: 0.8rem;
+            color: #e84393;
+            margin-top: 0.3rem;
+            font-style: italic;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #636e72;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .calendar {
+                gap: 4px;
+            }
+            
+            .weekday, .day {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .details-summary {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1 class="title">
+                <i class="fas fa-calendar-alt"></i>
+                출석부 달력
+            </h1>
+            <p class="subtitle">맥스체대입시 일산교육원 출석 정보</p>
+        </header>
 
-    <h2>맥스체대입시 일산교육원 출석 정보</h2>
+        <div class="month-selector">
+            <button id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+            <input type="month" id="monthPicker">
+            <button id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+        </div>
 
-    <!-- 월 선택 -->
-    <label>월 선택:
-        <input type="month" id="monthPicker">
-    </label>
-    
-    <div class="calendar-container">
         <div class="calendar" id="calendar">
             <!-- 요일 표시 -->
             <div class="weekday">일</div>
@@ -72,32 +343,81 @@
             <div class="weekday">금</div>
             <div class="weekday">토</div>
         </div>
-    </div>
 
-    <h3 id="selectedDateTitle"></h3>
-    <div class="attendance-list" id="attendanceDetails"></div>
+        <div class="details-container" id="attendanceDetails">
+            <div class="details-header">
+                <h2 class="details-title" id="selectedDateTitle">
+                    <i class="fas fa-calendar-day"></i>
+                    날짜를 선택해주세요
+                </h2>
+            </div>
+            <div class="no-data" id="noDataMessage">
+                <i class="fas fa-calendar-check" style="font-size: 2rem; margin-bottom: 1rem; color: #a29bfe;"></i>
+                <p>달력에서 날짜를 선택하면 해당 일자의 출석 정보를 확인할 수 있습니다</p>
+            </div>
+            <div id="detailsContent" style="display: none;">
+                <div class="details-summary">
+                    <div class="summary-item summary-present">
+                        <div>출석</div>
+                        <div class="summary-value" id="presentCount">0</div>
+                    </div>
+                    <div class="summary-item summary-late">
+                        <div>지각</div>
+                        <div class="summary-value" id="lateCount">0</div>
+                    </div>
+                    <div class="summary-item summary-absent">
+                        <div>결석</div>
+                        <div class="summary-value" id="absentCount">0</div>
+                    </div>
+                </div>
+                <h3>출석 대상 학생</h3>
+                <ul class="student-list" id="studentList"></ul>
+            </div>
+        </div>
+    </div>
 
     <script>
         const API_BASE = "https://supermax.kr";
         const calendar = document.getElementById("calendar");
         const monthPicker = document.getElementById("monthPicker");
+        const prevMonthBtn = document.getElementById("prevMonth");
+        const nextMonthBtn = document.getElementById("nextMonth");
         const selectedDateTitle = document.getElementById("selectedDateTitle");
         const attendanceDetails = document.getElementById("attendanceDetails");
+        const noDataMessage = document.getElementById("noDataMessage");
+        const detailsContent = document.getElementById("detailsContent");
+        const studentList = document.getElementById("studentList");
+        const presentCount = document.getElementById("presentCount");
+        const lateCount = document.getElementById("lateCount");
+        const absentCount = document.getElementById("absentCount");
 
         // 현재 월 설정
         const today = new Date();
         monthPicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         loadCalendarData();
 
-        // 월 변경 시 데이터 로드
+        // 월 변경 이벤트
         monthPicker.addEventListener("change", loadCalendarData);
+        prevMonthBtn.addEventListener("click", () => changeMonth(-1));
+        nextMonthBtn.addEventListener("click", () => changeMonth(1));
+
+        function changeMonth(offset) {
+            const [year, month] = monthPicker.value.split("-");
+            const date = new Date(year, month - 1 + offset, 1);
+            monthPicker.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            loadCalendarData();
+        }
 
         async function loadCalendarData() {
             const [year, month] = monthPicker.value.split("-");
-            const response = await fetch(`${API_BASE}/attendancemonth?year=${year}&month=${month}`);
-            const attendanceData = await response.json();
-            
-            renderCalendar(year, month, attendanceData);
+            try {
+                const response = await fetch(`${API_BASE}/attendancemonth?year=${year}&month=${month}`);
+                const attendanceData = await response.json();
+                renderCalendar(year, month, attendanceData);
+            } catch (error) {
+                console.error("출석 데이터를 불러오는 중 오류 발생:", error);
+                alert("출석 데이터를 불러오는 중 문제가 발생했습니다.");
+            }
         }
 
         function renderCalendar(year, month, attendanceData) {
@@ -113,6 +433,7 @@
             // 빈 칸 추가 (해당 월의 시작 요일 맞추기)
             for (let i = 0; i < firstDay; i++) {
                 const emptyCell = document.createElement("div");
+                emptyCell.classList.add("empty-day");
                 calendar.appendChild(emptyCell);
             }
 
@@ -120,21 +441,39 @@
             for (let date = 1; date <= lastDate; date++) {
                 const dayElement = document.createElement("div");
                 dayElement.classList.add("day");
-                dayElement.textContent = date;
+                
+                const dayNumber = document.createElement("div");
+                dayNumber.classList.add("day-number");
+                dayNumber.textContent = date;
+                dayElement.appendChild(dayNumber);
 
                 const fullDate = `${year}-${month.padStart(2, '0')}-${String(date).padStart(2, '0')}`;
                 const attendanceInfo = attendanceData.find(d => d.출석일 === fullDate);
 
-                // if (attendanceInfo) {
-                //     const stats = document.createElement("div");
-                //     stats.className = "stats";
-                //     stats.innerHTML = `
-                //         출석: ${attendanceInfo.출석} | 
-                //         지각: ${attendanceInfo.지각} | 
-                //         결석: ${attendanceInfo.결석}
-                //     `;
-                //     dayElement.appendChild(stats);
-                // }
+                if (attendanceInfo) {
+                    const dayStats = document.createElement("div");
+                    dayStats.classList.add("day-stats");
+                    
+                    if (attendanceInfo.출석 > 0) {
+                        const presentDot = document.createElement("div");
+                        presentDot.classList.add("stat-dot", "stat-present");
+                        dayStats.appendChild(presentDot);
+                    }
+                    
+                    if (attendanceInfo.지각 > 0) {
+                        const lateDot = document.createElement("div");
+                        lateDot.classList.add("stat-dot", "stat-late");
+                        dayStats.appendChild(lateDot);
+                    }
+                    
+                    if (attendanceInfo.결석 > 0) {
+                        const absentDot = document.createElement("div");
+                        absentDot.classList.add("stat-dot", "stat-absent");
+                        dayStats.appendChild(absentDot);
+                    }
+                    
+                    dayElement.appendChild(dayStats);
+                }
 
                 dayElement.addEventListener("click", () => loadAttendanceDetails(fullDate, dayElement));
 
@@ -142,50 +481,79 @@
             }
         }
 
-async function loadAttendanceDetails(date, selectedDay) {
-    document.querySelectorAll(".day").forEach(d => d.classList.remove("selected-day"));
-    selectedDay.classList.add("selected-day");
-    selectedDateTitle.textContent = `📅 ${date} 출석 상세`;
+        async function loadAttendanceDetails(date, selectedDay) {
+            document.querySelectorAll(".day").forEach(d => d.classList.remove("selected-day"));
+            selectedDay.classList.add("selected-day");
+            
+            try {
+                const response = await fetch(`${API_BASE}/attendanceday?date=${date}`);
+                const students = await response.json();
+                const dayOfWeek = new Date(date).getDay(); // 0 (일) ~ 6 (토)
 
-    const response = await fetch(`${API_BASE}/attendanceday?date=${date}`);
-    const students = await response.json(); // 여기가 포인트, 바로 배열로 받음
-    const dayOfWeek = new Date(date).getDay(); // 0 (일) ~ 6 (토)
+                // 해당 요일 출석 대상 학생 필터링
+                const filteredStudents = students.filter(s => {
+                    const attendKey = ['출석_일', '출석_월', '출석_화', '출석_수', '출석_목', '출석_금', '출석_일'][dayOfWeek];
+                    return s[attendKey] === 1;
+                });
 
-    // ✅ 해당 요일 출석 대상 학생 필터링
-    const filteredStudents = students.filter(s => {
-        const attendKey = ['출석_일', '출석_월', '출석_화', '출석_수', '출석_목', '출석_금', '출석_일'][dayOfWeek];
-        return s[attendKey] === 1;
-    });
+                // 출석 상태별 인원 수 계산
+                const attendanceCounts = {
+                    출석: filteredStudents.filter(s => s.출석상태 === '출석').length,
+                    지각: filteredStudents.filter(s => s.출석상태 === '지각').length,
+                    결석: filteredStudents.filter(s => s.출석상태 === '결석').length
+                };
 
-    // ✅ 출석 상태별 인원 수 계산
-    const attendanceCounts = {
-        출석: filteredStudents.filter(s => s.출석상태 === '출석').length,
-        지각: filteredStudents.filter(s => s.출석상태 === '지각').length,
-        결석: filteredStudents.filter(s => s.출석상태 === '결석').length
-    };
+                // 총 출석 대상 인원 수 계산
+                const totalAttendance = filteredStudents.length;
 
-    // ✅ 총 출석 대상 인원 수 계산
-    const totalAttendance = filteredStudents.length;
+                // UI 업데이트
+                const formattedDate = new Date(date).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'long'
+                });
+                
+                selectedDateTitle.innerHTML = `
+                    <i class="fas fa-calendar-day"></i>
+                    ${formattedDate} 출석 정보
+                `;
+                
+                presentCount.textContent = attendanceCounts.출석;
+                lateCount.textContent = attendanceCounts.지각;
+                absentCount.textContent = attendanceCounts.결석;
 
-    attendanceDetails.innerHTML = `
-        <h4>총 출석 대상: ${totalAttendance}명 (출석: ${attendanceCounts.출석}, 지각: ${attendanceCounts.지각}, 결석: ${attendanceCounts.결석})</h4>
-        <ul>
-            ${filteredStudents.length > 0 ? 
-                filteredStudents.map(s => `
-                    <li><strong>${s.이름}</strong> (${s.학교}, ${s.학년}학년) - 
-                    <span style="color: ${s.출석상태 === '출석' ? 'green' : (s.출석상태 === '지각' ? 'orange' : 'red')}">
-                        ${s.출석상태 || '미입력'}
-                    </span> 
-                    ${s.사유 ? `(${s.사유})` : ""}
-                    </li>
-                `).join("") 
-                : `<li>해당 요일에 출석해야 할 학생이 없습니다.</li>`
+                // 학생 목록 업데이트
+                studentList.innerHTML = '';
+                if (filteredStudents.length > 0) {
+                    filteredStudents.forEach(student => {
+                        const statusClass = student.출석상태 === '출석' ? 'status-present' : 
+                                          student.출석상태 === '지각' ? 'status-late' : 'status-absent';
+                        
+                        const studentItem = document.createElement("li");
+                        studentItem.classList.add("student-item");
+                        studentItem.innerHTML = `
+                            <div class="student-status ${statusClass}"></div>
+                            <div class="student-info">
+                                <div class="student-name">${student.이름}</div>
+                                <div class="student-meta">${student.학교}, ${student.학년}학년</div>
+                                ${student.사유 ? `<div class="student-reason">${student.사유}</div>` : ''}
+                            </div>
+                        `;
+                        studentList.appendChild(studentItem);
+                    });
+                    
+                    noDataMessage.style.display = 'none';
+                    detailsContent.style.display = 'block';
+                } else {
+                    noDataMessage.style.display = 'block';
+                    detailsContent.style.display = 'none';
+                }
+            } catch (error) {
+                console.error("출석 상세 정보를 불러오는 중 오류 발생:", error);
+                alert("출석 정보를 불러오는 중 문제가 발생했습니다.");
             }
-        </ul>
-    `;
-}
-
+        }
     </script>
-
 </body>
 </html>
