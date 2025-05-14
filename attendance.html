@@ -292,6 +292,20 @@
                 flex-direction: column;
             }
         }
+
+        @keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-btn.selected {
+  animation: blink 1s infinite;
+  transform: scale(1.07);
+  font-weight: bold;
+  border: 2px solid white;
+  z-index: 1;
+}
+
     </style>
 </head>
 
