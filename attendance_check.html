@@ -4,29 +4,210 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>일산맥스 출근 체크</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
-        body { text-align: center; }
-        .attendance-select { display: flex; justify-content: center; margin-top: 5px; gap: 10px; }
-        .attendance-btn { padding: 10px 20px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; }
-        .attendance-btn.selected { background-color: #4CAF50; color: white; }
-        .btn { margin-top: 15px; }
-        .teacher-entry { margin-bottom: 15px; }
-.work-hours-input {
-    display: block;
-    margin: 5px auto; /* 가운데 정렬 */
-    text-align: center;
-    width: 80px;
-}
-
+        :root {
+            --primary-color: #4361ee;
+            --success-color: #4cc9f0;
+            --warning-color: #f8961e;
+            --danger-color: #f94144;
+            --off-day-color: #9d4edd;
+        }
         
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .date-display {
+            font-size: 1.2rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .teacher-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .teacher-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .teacher-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .teacher-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .teacher-position {
+            background: #f0f0f0;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #555;
+        }
+        
+        .attendance-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .attendance-btn {
+            flex: 1;
+            padding: 0.6rem;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .attendance-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .attendance-btn[data-status="출근"] {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .attendance-btn[data-status="지각"] {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .attendance-btn[data-status="휴무"] {
+            background-color: var(--off-day-color);
+            color: white;
+        }
+        
+        .attendance-btn.selected {
+            border-color: white;
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .work-hours-container {
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .work-hours-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .work-hours-input {
+            width: 80px;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .save-btn {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 2rem;
+        }
+        
+        .save-btn:hover {
+            background-color: #3a56d4;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+                margin-top: 0;
+                border-radius: 0;
+            }
+            
+            .attendance-controls {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>출근 체크</h1>
-    <p id="currentDate"></p>
-    <div id="teacherList">로딩 중...</div>
-    <button class="btn" onclick="saveAttendance()">저장하기</button>
+    <div class="container">
+        <header>
+            <h1>일산맥스 출근 체크</h1>
+            <div class="date-display" id="currentDate"></div>
+        </header>
+        
+        <div id="teacherList">
+            <div class="loading">강사 정보를 불러오는 중...</div>
+        </div>
+        
+        <button class="save-btn" onclick="saveAttendance()">
+            <i class="fas fa-save"></i> 출근 정보 저장하기
+        </button>
+        
+        <footer>
+            &copy; 2025 일산맥스 강사 출근부 시스템 | 개발: 정원장
+        </footer>
+    </div>
 
     <script>
         const today = new Date();
@@ -37,91 +218,173 @@
         const day = dayNames[today.getDay()];
         const todayString = `${year}-${month}-${date}`;
 
-        document.getElementById('currentDate').textContent = `${todayString} (${day}요일)`;
+        document.getElementById('currentDate').textContent = `${year}년 ${month}월 ${date}일 (${day}요일)`;
 
         async function fetchAttendanceRecords() {
-            const response = await fetch(`https://supermax.kr/attendancehistory?date=${todayString}`);
-            return await response.json();
+            try {
+                const response = await fetch(`https://supermax.kr/attendancehistory?date=${todayString}`);
+                return await response.json();
+            } catch (error) {
+                console.error('출근 기록 불러오기 실패:', error);
+                return [];
+            }
         }
 
         async function fetchTeachers() {
-            const [teachersResponse, attendanceRecords] = await Promise.all([
-                fetch('https://supermax.kr/teachers'),
-                fetchAttendanceRecords()
-            ]);
-            const teachers = await teachersResponse.json();
-            const listContainer = document.getElementById('teacherList');
-            listContainer.innerHTML = '';
+            try {
+                const [teachersResponse, attendanceRecords] = await Promise.all([
+                    fetch('https://supermax.kr/teachers'),
+                    fetchAttendanceRecords()
+                ]);
+                
+                const teachers = await teachersResponse.json();
+                const listContainer = document.getElementById('teacherList');
+                
+                if (teachers.length === 0) {
+                    listContainer.innerHTML = '<div class="loading">등록된 강사가 없습니다.</div>';
+                    return;
+                }
+                
+                listContainer.innerHTML = '';
+                
+                teachers.forEach(teacher => {
+                    const record = attendanceRecords.find(item => String(item.강사_id) === String(teacher.id));
+                    const selectedStatus = record 
+                        ? (record.출근 ? '출근' : record.지각 ? '지각' : record.휴무 ? '휴무' : null)
+                        : null;
+                    const workHours = record?.근무시간 ?? '';
 
-            teachers.forEach(teacher => {
-                const record = attendanceRecords.find(item => String(item.강사_id) === String(teacher.id));
-                const selectedStatus = record 
-                    ? (record.출근 ? '출근' : record.지각 ? '지각' : record.휴무 ? '휴무' : null)
-                    : null;
-                const workHours = record?.근무시간 ?? ''; // 기존 근무시간 표시
+                    const card = document.createElement('div');
+                    card.className = 'teacher-card';
+                    card.innerHTML = `
+                        <div class="teacher-info">
+                            <span class="teacher-name">${teacher.이름}</span>
+                            <span class="teacher-position">${teacher.직급 || '직급 없음'}</span>
+                        </div>
+                        
+                        <div class="attendance-controls" data-teacher-id="${teacher.id}">
+                            <div class="attendance-btn" data-status="출근">출근</div>
+                            <div class="attendance-btn" data-status="지각">지각</div>
+                            <div class="attendance-btn" data-status="휴무">휴무</div>
+                        </div>
+                        
+                        <div class="work-hours-container">
+                            <span class="work-hours-label">근무 시간:</span>
+                            <input type="number" class="work-hours-input" placeholder="시간" value="${workHours}" min="0" step="0.5">
+                        </div>
+                    `;
+                    
+                    listContainer.appendChild(card);
 
-                const div = document.createElement('div');
-div.classList.add('teacher-entry');
-div.innerHTML = `
-    <p>${teacher.이름} (${teacher.직급 || '직급 없음'})</p>
-    <div class="attendance-select" data-teacher-id="${teacher.id}">
-        <div class="attendance-btn" data-status="출근">출근</div>
-        <div class="attendance-btn" data-status="지각">지각</div>
-        <div class="attendance-btn" data-status="휴무">휴무</div>
-    </div>
-    <input type="number" class="work-hours-input" placeholder="근무시간" value="${workHours}" min="0" step="0.5">
-`;
-listContainer.appendChild(div);
-
-
-                const buttons = div.querySelectorAll('.attendance-btn');
-                buttons.forEach(button => {
-                    if (button.getAttribute('data-status') === selectedStatus) {
-                        button.classList.add('selected');
-                    }
-                    button.addEventListener('click', () => {
-                        buttons.forEach(btn => btn.classList.remove('selected'));
-                        button.classList.add('selected');
+                    const buttons = card.querySelectorAll('.attendance-btn');
+                    buttons.forEach(button => {
+                        if (button.getAttribute('data-status') === selectedStatus) {
+                            button.classList.add('selected');
+                        }
+                        
+                        button.addEventListener('click', () => {
+                            buttons.forEach(btn => btn.classList.remove('selected'));
+                            button.classList.add('selected');
+                            
+                            // 근무시간 필드 활성화/비활성화
+                            const workHoursInput = card.querySelector('.work-hours-input');
+                            if (button.getAttribute('data-status') === '휴무') {
+                                workHoursInput.value = '';
+                                workHoursInput.disabled = true;
+                            } else {
+                                workHoursInput.disabled = false;
+                            }
+                        });
                     });
+                    
+                    // 초기 상태에 따라 근무시간 필드 설정
+                    if (selectedStatus === '휴무') {
+                        const workHoursInput = card.querySelector('.work-hours-input');
+                        workHoursInput.value = '';
+                        workHoursInput.disabled = true;
+                    }
                 });
-            });
+            } catch (error) {
+                console.error('강사 정보 불러오기 실패:', error);
+                document.getElementById('teacherList').innerHTML = `
+                    <div class="loading" style="color: var(--danger-color);">
+                        데이터를 불러오는 중 오류가 발생했습니다. 새로고침 해주세요.
+                    </div>
+                `;
+            }
         }
 
         async function saveAttendance() {
-            const entries = document.querySelectorAll('.teacher-entry');
+            const entries = document.querySelectorAll('.teacher-card');
             const attendanceData = [];
+            let hasError = false;
 
             entries.forEach(entry => {
                 const selectedButton = entry.querySelector('.attendance-btn.selected');
                 const workHoursInput = entry.querySelector('.work-hours-input');
-                if (selectedButton) {
-                    const 상태 = selectedButton.getAttribute('data-status');
-                    const 강사_id = entry.querySelector('.attendance-select').getAttribute('data-teacher-id');
-                    const 근무시간 = workHoursInput.value ? parseFloat(workHoursInput.value) : null;
-                    attendanceData.push({ 강사_id, 출근일: todayString, 상태, 근무시간 });
+                const teacherId = entry.querySelector('.attendance-controls').getAttribute('data-teacher-id');
+                
+                if (!selectedButton) {
+                    hasError = true;
+                    entry.style.border = '2px solid var(--danger-color)';
+                    setTimeout(() => {
+                        entry.style.border = 'none';
+                    }, 2000);
+                    return;
                 }
+                
+                const 상태 = selectedButton.getAttribute('data-status');
+                const 근무시간 = workHoursInput.value && 상태 !== '휴무' ? parseFloat(workHoursInput.value) : null;
+                
+                attendanceData.push({ 
+                    강사_id: teacherId, 
+                    출근일: todayString, 
+                    상태, 
+                    근무시간 
+                });
             });
 
-            if (attendanceData.length === 0) {
-                alert('출근 상태를 선택하세요.');
+            if (hasError) {
+                alert('모든 강사의 출근 상태를 선택해주세요.');
                 return;
             }
 
-            const response = await fetch('https://supermax.kr/attendancecheck', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(attendanceData)
-            });
+            try {
+                const saveBtn = document.querySelector('.save-btn');
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 저장 중...';
+                
+                const response = await fetch('https://supermax.kr/attendancecheck', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(attendanceData)
+                });
 
-            const result = await response.json();
-            alert(result.message);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 성공 시 애니메이션 효과
+                    saveBtn.innerHTML = '<i class="fas fa-check"></i> 저장 완료!';
+                    saveBtn.style.backgroundColor = 'var(--success-color)';
+                    
+                    setTimeout(() => {
+                        saveBtn.innerHTML = '<i class="fas fa-save"></i> 출근 정보 저장하기';
+                        saveBtn.style.backgroundColor = 'var(--primary-color)';
+                        saveBtn.disabled = false;
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || '저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('저장 실패:', error);
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> 출근 정보 저장하기';
+                saveBtn.disabled = false;
+                alert(`저장 실패: ${error.message}`);
+            }
         }
 
-        fetchTeachers();
+        // 초기 데이터 로드
+        document.addEventListener('DOMContentLoaded', fetchTeachers);
     </script>
-
-    <footer style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
-        &copy; 2025 일산맥스 강사 출근부 시스템 BY 정원장
-    </footer>
 </body>
 </html>
