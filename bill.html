@@ -563,12 +563,22 @@
                 
                 const attendanceRecords = await response.json();
                 let totalDays = 0;
+                let dailySalaryTotal = 0; // 일급제 총액을 계산하기 위한 변수
                 const tableBody = document.getElementById('attendanceTable');
                 tableBody.innerHTML = "";
 
                 attendanceRecords.forEach(record => {
                     if (record.강사_id == teacherId && (record.출근 === 1 || record.지각 === 1)) {
                         totalDays++;
+                        
+                        // [수정] 일급 방식일 경우, 근무 타임에 따라 급여를 누적
+                        if (salaryType === 'daily') {
+                            // 출근 기록에 '근무시간' 필드가 있다고 가정.
+                            // 값이 0보다 크면 해당 값을 사용하고, 아니면(0, null, undefined) 1로 처리.
+                            const workBlocks = record.근무시간 > 0 ? record.근무시간 : 1;
+                            dailySalaryTotal += dailyRate * workBlocks;
+                        }
+
                         const dateObj = new Date(record.출근일);
                         const kstDate = new Date(dateObj.getTime() + (9 * 60 * 60 * 1000));
                         const formattedDate = kstDate.toISOString().split('T')[0];
@@ -584,13 +594,20 @@
 
                 const incentive1Amount = incentive1Count * 100000;
                 
-                let totalSalary = salaryType === "hourly" ? totalDays * hourlyRate * 8 :
-                              salaryType === "daily" ? totalDays * dailyRate :
-                              monthlySalary;
+                let totalSalary;
+                if (salaryType === 'hourly') {
+                    totalSalary = totalDays * hourlyRate * 8; // 하루 8시간 기준
+                } else if (salaryType === 'daily') {
+                    totalSalary = dailySalaryTotal; // 누적된 일급 총액 사용
+                } else { // 'monthly'
+                    totalSalary = monthlySalary;
+                }
 
                 let taxAmount = applyTax ? totalSalary * 0.033 : 0;
                 let netSalary = totalSalary - taxAmount + incentive1Amount + incentive2Amount;
-                netSalary = Math.floor(netSalary / 10) * 10;
+                
+                taxAmount = Math.floor(taxAmount);
+                netSalary = Math.floor(netSalary / 10) * 10; // 10원 단위 절사
 
                 document.getElementById('attendanceDays').textContent = totalDays;
                 document.getElementById('totalSalary').textContent = `₩${totalSalary.toLocaleString()}`;
@@ -624,9 +641,9 @@
             const incentive2Amount = parseFloat(document.getElementById('incentive2').value) || 0;
             
             const totalDays = parseInt(document.getElementById('attendanceDays').textContent) || 0;
-            let totalSalary = Math.floor(parseFloat(document.getElementById('totalSalary').textContent.replace(/₩|,/g, '')) / 10) * 10;
-            let taxAmount = Math.floor(parseFloat(document.getElementById('taxAmount').textContent.replace(/₩|,/g, '')) / 10) * 10;
-            let salaryAmount = Math.floor(parseFloat(document.getElementById('netSalary').textContent.replace(/₩|,/g, '')) / 10) * 10;
+            let totalSalary = parseFloat(document.getElementById('totalSalary').textContent.replace(/₩|,/g, '')) || 0;
+            let taxAmount = parseFloat(document.getElementById('taxAmount').textContent.replace(/₩|,/g, '')) || 0;
+            let salaryAmount = parseFloat(document.getElementById('netSalary').textContent.replace(/₩|,/g, '')) || 0;
             const applyTax = document.getElementById('applyTax').checked;
 
             const salaryData = { 
