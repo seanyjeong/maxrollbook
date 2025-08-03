@@ -409,7 +409,7 @@
                 </tbody>
             </table>
             
-            <h3>출근 상세 기록</h3>
+            <h3>출근 상세 기록 (근무 타임)</h3>
             <table class="payroll-table">
                 <thead>
                     <tr>
@@ -563,7 +563,7 @@
                 
                 const attendanceRecords = await response.json();
                 let totalDays = 0;
-                let dailySalaryTotal = 0; // 일급제 총액을 계산하기 위한 변수
+                let dailySalaryTotal = 0;
                 const tableBody = document.getElementById('attendanceTable');
                 tableBody.innerHTML = "";
 
@@ -571,11 +571,9 @@
                     if (record.강사_id == teacherId && (record.출근 === 1 || record.지각 === 1)) {
                         totalDays++;
                         
-                        // [수정] 일급 방식일 경우, 근무 타임에 따라 급여를 누적
+                        const workBlocks = record.근무시간 > 0 ? record.근무시간 : 1;
+
                         if (salaryType === 'daily') {
-                            // 출근 기록에 '근무시간' 필드가 있다고 가정.
-                            // 값이 0보다 크면 해당 값을 사용하고, 아니면(0, null, undefined) 1로 처리.
-                            const workBlocks = record.근무시간 > 0 ? record.근무시간 : 1;
                             dailySalaryTotal += dailyRate * workBlocks;
                         }
 
@@ -584,8 +582,14 @@
                         const formattedDate = kstDate.toISOString().split('T')[0];
                         const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][kstDate.getDay()];
 
+                        // [수정] 근무 타임이 1보다 클 경우에만 표시
+                        let dateDisplay = formattedDate;
+                        if (workBlocks > 1) {
+                            dateDisplay += ` (X ${workBlocks})`;
+                        }
+
                         const row = document.createElement('tr');
-                        row.innerHTML = `<td>${formattedDate}</td><td>${dayOfWeek}</td>`;
+                        row.innerHTML = `<td>${dateDisplay}</td><td>${dayOfWeek}</td>`;
                         tableBody.appendChild(row);
                     }
                 });
@@ -596,10 +600,10 @@
                 
                 let totalSalary;
                 if (salaryType === 'hourly') {
-                    totalSalary = totalDays * hourlyRate * 8; // 하루 8시간 기준
+                    totalSalary = totalDays * hourlyRate * 8;
                 } else if (salaryType === 'daily') {
-                    totalSalary = dailySalaryTotal; // 누적된 일급 총액 사용
-                } else { // 'monthly'
+                    totalSalary = dailySalaryTotal;
+                } else {
                     totalSalary = monthlySalary;
                 }
 
@@ -607,7 +611,7 @@
                 let netSalary = totalSalary - taxAmount + incentive1Amount + incentive2Amount;
                 
                 taxAmount = Math.floor(taxAmount);
-                netSalary = Math.floor(netSalary / 10) * 10; // 10원 단위 절사
+                netSalary = Math.floor(netSalary / 10) * 10;
 
                 document.getElementById('attendanceDays').textContent = totalDays;
                 document.getElementById('totalSalary').textContent = `₩${totalSalary.toLocaleString()}`;
